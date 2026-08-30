@@ -142,7 +142,33 @@ function saveDB(){
   catch (e){ return false; }
 }
 function resetDB(){ DB = seedDB(); saveDB(); }
+
+/* Translations for the sample routines and events were added after v2 first
+   shipped, so a browser that saved data before then still holds English-only
+   titles. Copy them across on load - but never onto an item the parent has
+   renamed or already given a translation, so edits are preserved. */
+function backfillSeedTitles(db){
+  var seed = seedDB(), byKey = {}, filled = 0;
+  seed.tasks.forEach(function(x){ byKey['t|' + x.id] = x; });
+  seed.events.forEach(function(x){ byKey['e|' + x.id] = x; });
+
+  function fill(list, prefix){
+    (list || []).forEach(function(item){
+      var s = byKey[prefix + '|' + item.id];
+      if (!s || !s.titles) return;                       /* not a seed item */
+      if (item.titles && item.titles.ko) return;          /* already translated */
+      if (item.title !== s.title) return;                 /* renamed - leave alone */
+      item.titles = { ko: s.titles.ko };
+      filled++;
+    });
+  }
+  fill(db.tasks, 't');
+  fill(db.events, 'e');
+  return filled;
+}
+
 DB = loadDB();
+if (backfillSeedTitles(DB)) saveDB();
 
 /* ---------------- kids ---------------- */
 function allKids(){ return DB.kids; }

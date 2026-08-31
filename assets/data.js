@@ -9,7 +9,23 @@ var DAY_FULL = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','S
 var MON_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MON_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-function today(){ var n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); }
+/* The family runs on Pacific time, whatever the device is set to, so a tablet
+   taken to another timezone still shows the right day and part of the day. */
+var APP_TZ = 'America/Los_Angeles';
+function nowLocal(){
+  try {
+    var f = new Intl.DateTimeFormat('en-US', {
+      timeZone: APP_TZ, year:'numeric', month:'2-digit', day:'2-digit',
+      hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false
+    }).formatToParts(new Date());
+    var g = {};
+    f.forEach(function(p){ g[p.type] = p.value; });
+    var hh = +g.hour === 24 ? 0 : +g.hour;          /* some engines report 24 */
+    return new Date(+g.year, +g.month - 1, +g.day, hh, +g.minute, +g.second);
+  } catch (e){ return new Date(); }                  /* no Intl - use the device */
+}
+function today(){ var n = nowLocal(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); }
+function minutesNow(){ var n = nowLocal(); return n.getHours() * 60 + n.getMinutes(); }
 function addDays(dt, n){ var x = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()); x.setDate(x.getDate() + n); return x; }
 function monIdx(dt){ return (dt.getDay() + 6) % 7; }          /* 0 = Monday */
 function startOfWeek(dt){ return addDays(dt, -monIdx(dt)); }
@@ -34,9 +50,7 @@ function timeLabel(mins){
 }
 function durLabel(m){ return m >= 60 ? (m % 60 ? (m / 60).toFixed(1) + ' hr' : (m / 60) + ' hr') : m + ' min'; }
 
-/* the demo always opens on a school day */
-var REAL_TODAY = today();
-var TODAY = isWeekend(REAL_TODAY) ? addDays(REAL_TODAY, 7 - monIdx(REAL_TODAY)) : REAL_TODAY;
+var TODAY = today();
 
 /* ---------------- shared vocabulary ---------------- */
 var SUBJECTS = {
@@ -61,8 +75,19 @@ function slotOf(id){
   for (var i = 0; i < SLOTS.length; i++) if (SLOTS[i].id === id) return SLOTS[i];
   return SLOTS[0];
 }
-/* which slot a scheduled time falls into */
-function slotForMinutes(m){ return m < 720 ? 'morning' : m < 1020 ? 'midday' : 'evening'; }
+/* Slot boundaries: morning 6:00, midday 12:00, evening 17:00. */
+var SLOT_START = { morning: 6 * 60, midday: 12 * 60, evening: 17 * 60 };
+/* which slot a scheduled lesson belongs to */
+function slotForMinutes(m){
+  return m < SLOT_START.midday ? 'morning' : m < SLOT_START.evening ? 'midday' : 'evening';
+}
+/* which slot it is right now - before 6am still counts as the evening before */
+function currentSlot(){
+  var m = minutesNow();
+  if (m >= SLOT_START.evening || m < SLOT_START.morning) return 'evening';
+  if (m >= SLOT_START.midday) return 'midday';
+  return 'morning';
+}
 
 var PALETTES = [
   { id:'k1', name:'Teal' }, { id:'k2', name:'Rose' },  { id:'k3', name:'Grape' },
@@ -79,7 +104,8 @@ var state = {
   filter:[],
   cursor:TODAY,
   calMode:'week',
-  slot:'morning',
+  slot:currentSlot(),      /* follows the clock until the user picks one */
+  slotManual:false,
   lessonKid:'all',
   progressKid:'k1',
   openCourses:{}

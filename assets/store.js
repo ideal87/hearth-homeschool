@@ -12,94 +12,281 @@ function uid(prefix){
   return (prefix || 'x') + Date.now().toString(36).slice(-4) + Math.random().toString(36).slice(2, 7);
 }
 
-/* ---------------- seed ---------------- */
+/* ---------------- seed ----------------
+   The family configuration a fresh browser starts with, and what
+   Settings -> Reset restores. Dates here are real dates, not offsets. */
 function seedDB(){
-  var d = function(off){ return ymd(addDays(TODAY, off)); };
   return {
     version: 2,
     kids: [
-      { id:'k1', name:'Eli',  grade:'Grade 4',      age:9, color:'k1', emoji:'🦊', openingStars:245, streak:6, lang:'en',
+      {
+        id:'k1',
+        name:'Hannah',
+        grade:'Grade 4',
+        age:9,
+        color:'k2',
+        emoji:'🐬',
+        openingStars:0,
+        streak:6,
+        lang:'en',
         likes:'Building things, soccer, dinosaurs',
-        goals:['Read 20 minutes every day', 'Know all the times tables'] },
-      { id:'k2', name:'Maya', grade:'Grade 1',      age:6, color:'k2', emoji:'🐰', openingStars:180, streak:4, lang:'ko',
+        goals:['Read 20 minutes every day', 'Know all the times tables']
+      },
+      {
+        id:'k2',
+        name:'Juan',
+        grade:'Grade 1',
+        age:6,
+        color:'k6',
+        emoji:'🦋',
+        openingStars:0,
+        streak:4,
+        lang:'en',
         likes:'Ballet, drawing, animal books',
-        goals:['Read a whole chapter book', 'Count to 200'] },
-      { id:'k3', name:'Nora', grade:'Kindergarten', age:5, color:'k3', emoji:'🐻', openingStars:120, streak:9, lang:'en',
+        goals:['Read a whole chapter book', 'Count to 200']
+      },
+      {
+        id:'k3',
+        name:'Ian',
+        grade:'Pre-K',
+        age:4,
+        color:'k3',
+        emoji:'🐨',
+        openingStars:0,
+        streak:9,
+        lang:'ko',
         likes:'Playdough, singing, the sandbox',
-        goals:['Sound out three-letter words', 'Write all my letters'] }
+        goals:['Sound out three-letter words', 'Write all my letters']
+      }
     ],
-
-    /* routines + chores. days = weekdays it applies (0 = Monday) */
     tasks: [
-      { id:'t1',  title:'Wake up & make bed',   emoji:'⏰', slot:'morning', stars:5,  kind:'routine', kids:['k1','k2','k3'], days:[0,1,2,3,4,5,6], titles:{ko:'일어나서 이불 정리하기'} },
-      { id:'t2',  title:'Get dressed',          emoji:'👕', slot:'morning', stars:5,  kind:'routine', kids:['k1','k2','k3'], days:[0,1,2,3,4,5,6], titles:{ko:'옷 입기'} },
-      { id:'t3',  title:'Brush teeth',          emoji:'🦷', slot:'morning', stars:5,  kind:'routine', kids:['k1','k2','k3'], days:[0,1,2,3,4,5,6], titles:{ko:'이 닦기'} },
-      { id:'t4',  title:'Eat breakfast',        emoji:'🥣', slot:'morning', stars:5,  kind:'routine', kids:['k1','k2','k3'], days:[0,1,2,3,4,5,6], titles:{ko:'아침 먹기'} },
-      { id:'t5',  title:'Feed the dog',         emoji:'🐕', slot:'morning', stars:10, kind:'chore',   kids:['k1','k2'],      days:[0,1,2,3,4,5,6], titles:{ko:'강아지 밥 주기'} },
-      { id:'t6',  title:'Water the plant',      emoji:'🪴', slot:'morning', stars:10, kind:'chore',   kids:['k3'],           days:[0,1,2,3,4,5,6], titles:{ko:'화분에 물 주기'} },
-      { id:'t7',  title:'Ready for circle time',emoji:'☀️', slot:'morning', stars:10, kind:'routine', kids:['k1','k2','k3'], days:[0,1,2,3,4], titles:{ko:'모임 시간 준비하기'} },
-
-      { id:'t8',  title:'Clear the school table', emoji:'🧹', slot:'midday', stars:10, kind:'chore',   kids:['k1','k2','k3'], days:[0,1,2,3,4], titles:{ko:'공부 책상 정리하기'} },
-      { id:'t9',  title:'Lunch dishes to sink',   emoji:'🍽️', slot:'midday', stars:5,  kind:'chore',   kids:['k1','k2','k3'], days:[0,1,2,3,4,5,6], titles:{ko:'점심 그릇 싱크대에 넣기'} },
-      { id:'t10', title:'Read 20 minutes',        emoji:'📖', slot:'midday', stars:15, kind:'routine', kids:['k1'],           days:[0,1,2,3,4,5,6], titles:{ko:'20분 책 읽기'} },
-      { id:'t11', title:'Read with a grown-up',   emoji:'📚', slot:'midday', stars:10, kind:'routine', kids:['k2','k3'],      days:[0,1,2,3,4,5,6], titles:{ko:'어른과 함께 책 읽기'} },
-      { id:'t12', title:'Sweep the porch',        emoji:'🧹', slot:'midday', stars:15, kind:'chore',   kids:['k1'],           days:[1,3], titles:{ko:'현관 쓸기'} },
-      { id:'t13', title:'Put shoes away',         emoji:'👟', slot:'midday', stars:5,  kind:'chore',   kids:['k1','k2','k3'], days:[0,1,2,3,4,5,6], titles:{ko:'신발 정리하기'} },
-
-      { id:'t14', title:'Set the table',          emoji:'🍴', slot:'evening', stars:10, kind:'chore',   kids:['k1'],           days:[0,1,2,3,4,5,6], titles:{ko:'식탁 차리기'} },
-      { id:'t15', title:'Fill the water cups',    emoji:'🥤', slot:'evening', stars:10, kind:'chore',   kids:['k2'],           days:[0,1,2,3,4,5,6], titles:{ko:'물컵 채우기'} },
-      { id:'t16', title:'Put the toys away',      emoji:'🧸', slot:'evening', stars:10, kind:'chore',   kids:['k3'],           days:[0,1,2,3,4,5,6], titles:{ko:'장난감 정리하기'} },
-      { id:'t17', title:'Laundry in the basket',  emoji:'🧺', slot:'evening', stars:10, kind:'chore',   kids:['k1','k2','k3'], days:[0,1,2,3,4,5,6], titles:{ko:'빨래 바구니에 넣기'} },
-      { id:'t18', title:'Pack tomorrow’s bag',    emoji:'🎒', slot:'evening', stars:5,  kind:'routine', kids:['k1','k2'],      days:[0,1,2,3,4], titles:{ko:'내일 가방 싸기'} },
-      { id:'t19', title:'Pajamas & teeth',        emoji:'🌙', slot:'evening', stars:5,  kind:'routine', kids:['k1','k2','k3'], days:[0,1,2,3,4,5,6], titles:{ko:'잠옷 입고 이 닦기'} },
-      { id:'t20', title:'Tidy your room',         emoji:'🛏️', slot:'evening', stars:15, kind:'chore',   kids:['k1','k2','k3'], days:[4,5], titles:{ko:'방 정리하기'} }
+      {
+        id:'t1',
+        title:'Wake up & make bed',
+        emoji:'⏰',
+        slot:'morning',
+        stars:5,
+        kind:'routine',
+        kids:['k1', 'k2', 'k3'],
+        days:[0,1,2,3,4,5,6],
+        titles:{ ko:'일어나서 이불 정리하기' }
+      },
+      {
+        id:'t2',
+        title:'Get dressed',
+        emoji:'👕',
+        slot:'morning',
+        stars:5,
+        kind:'routine',
+        kids:['k3'],
+        days:[0,1,2,3,4,5,6],
+        titles:{ ko:'옷 입기' }
+      },
+      {
+        id:'t3',
+        title:'Brush teeth',
+        emoji:'🦷',
+        slot:'morning',
+        stars:5,
+        kind:'routine',
+        kids:['k1', 'k2', 'k3'],
+        days:[0,1,2,3,4,5,6],
+        titles:{ ko:'이 닦기' }
+      },
+      {
+        id:'t6',
+        title:'Water the plant',
+        emoji:'🪴',
+        slot:'midday',
+        stars:5,
+        kind:'chore',
+        kids:['k1'],
+        days:[0,2,4,6],
+        titles:{ ko:'화분에 물 주기' }
+      },
+      {
+        id:'t7',
+        title:'QT',
+        emoji:'📖',
+        slot:'morning',
+        stars:10,
+        kind:'routine',
+        kids:['k1', 'k2', 'k3'],
+        days:[0,1,2,3,4],
+        titles:null
+      },
+      {
+        id:'t11',
+        title:'Reading Time',
+        emoji:'📚',
+        slot:'evening',
+        stars:5,
+        kind:'routine',
+        kids:['k1', 'k2', 'k3'],
+        days:[0,1,2,3,4],
+        titles:{ ko:'어른과 함께 책 읽기' }
+      },
+      {
+        id:'t12',
+        title:'Activities with brothers',
+        emoji:'🎨',
+        slot:'midday',
+        stars:10,
+        kind:'chore',
+        kids:['k1'],
+        days:[0,1,2,3,4,5],
+        titles:{ ko:'현관 쓸기' }
+      },
+      {
+        id:'t13',
+        title:'Family Meeting',
+        emoji:'☀️',
+        slot:'evening',
+        stars:5,
+        kind:'routine',
+        kids:['k1', 'k2', 'k3'],
+        days:[6],
+        titles:{ ko:'가족 회의' }
+      },
+      {
+        id:'t14',
+        title:'Set the table',
+        emoji:'🍴',
+        slot:'evening',
+        stars:5,
+        kind:'chore',
+        kids:['k1', 'k2', 'k3'],
+        days:[0,1,2,3,4,5,6],
+        titles:{ ko:'식탁 차리기' }
+      },
+      {
+        id:'t16',
+        title:'Put the toys away',
+        emoji:'🧸',
+        slot:'evening',
+        stars:5,
+        kind:'chore',
+        kids:['k1', 'k2', 'k3'],
+        days:[0,1,2,3,4,5,6],
+        titles:{ ko:'장난감 정리하기' }
+      },
+      {
+        id:'t17',
+        title:'Laundry in the basket',
+        emoji:'🧺',
+        slot:'evening',
+        stars:10,
+        kind:'chore',
+        kids:['k1', 'k2', 'k3'],
+        days:[1,3,5],
+        titles:{ ko:'빨래 바구니에 넣기' }
+      },
+      {
+        id:'t18',
+        title:'Pack tomorrow’s bag',
+        emoji:'🎒',
+        slot:'evening',
+        stars:5,
+        kind:'routine',
+        kids:['k1', 'k2', 'k3'],
+        days:[0,1,2,3],
+        titles:{ ko:'내일 가방 싸기' }
+      },
+      {
+        id:'t19',
+        title:'Pajamas & teeth',
+        emoji:'🌙',
+        slot:'evening',
+        stars:5,
+        kind:'routine',
+        kids:['k1', 'k2', 'k3'],
+        days:[0,1,2,3,4,5,6],
+        titles:{ ko:'잠옷 입고 이 닦기' }
+      },
+      {
+        id:'t20',
+        title:'Tidy your room',
+        emoji:'🛏️',
+        slot:'midday',
+        stars:5,
+        kind:'chore',
+        kids:['k1'],
+        days:[0,1,2,3,4],
+        titles:{ ko:'방 정리하기' }
+      },
+      {
+        id:'t3yevb0alp',
+        title:'Exercise',
+        emoji:'⚽',
+        slot:'evening',
+        stars:5,
+        kind:'routine',
+        kids:['k1', 'k2', 'k3'],
+        days:[0,1,2,3,4],
+        titles:{ ko:'운동하기' }
+      }
     ],
-
-    /* calendar events only - routines and chores are NEVER stored here */
     events: [
-      { id:'e1',  title:'Circle time',    sk:'circle', kids:['k1','k2','k3'], days:[0,1,2,3,4], start:540,  dur:30, titles:{ko:'모임 시간'} },
-      { id:'e2',  title:'Math',           sk:'math',   kids:['k1'],           days:[0,1,2,3,4], start:575,  dur:40, titles:{ko:'수학'} },
-      { id:'e3',  title:'Math',           sk:'math',   kids:['k2'],           days:[0,1,2,3,4], start:575,  dur:25, titles:{ko:'수학'} },
-      { id:'e4',  title:'Phonics',        sk:'read',   kids:['k3'],           days:[0,1,2,3,4], start:575,  dur:20, titles:{ko:'파닉스'} },
-      { id:'e5',  title:'Reading',        sk:'read',   kids:['k1'],           days:[0,1,2,3,4], start:620,  dur:30, titles:{ko:'읽기'} },
-      { id:'e6',  title:'Reading',        sk:'read',   kids:['k2'],           days:[0,1,2,3,4], start:605,  dur:25, titles:{ko:'읽기'} },
-      { id:'e7',  title:'Math games',     sk:'math',   kids:['k3'],           days:[0,2,4],     start:605,  dur:20, titles:{ko:'수학 놀이'} },
-      { id:'e8',  title:'Writing',        sk:'write',  kids:['k1'],           days:[0,2,4],     start:660,  dur:25, titles:{ko:'글쓰기'} },
-      { id:'e9',  title:'Handwriting',    sk:'write',  kids:['k2'],           days:[0,1,2,3,4], start:635,  dur:20, titles:{ko:'글씨 쓰기'} },
-      { id:'e10', title:'Art & crafts',   sk:'art',    kids:['k3'],           days:[1,3],       start:635,  dur:30, titles:{ko:'미술과 만들기'} },
-      { id:'e11', title:'Read aloud',     sk:'read',   kids:['k1','k2','k3'], days:[0,1,2,3,4], start:690,  dur:30, titles:{ko:'소리 내어 읽기'} },
-      { id:'e12', title:'Science',        sk:'sci',    kids:['k1','k2'],      days:[2],         start:780,  dur:45, titles:{ko:'과학'} },
-      { id:'e13', title:'History story',  sk:'hist',   kids:['k1','k2','k3'], days:[0],         start:780,  dur:30, titles:{ko:'역사 이야기'} },
-      { id:'e14', title:'Outside play',   sk:'out',    kids:['k1','k2','k3'], days:[0,1,2,3,4], start:825,  dur:60, titles:{ko:'바깥 놀이'} },
-      { id:'e15', title:'Music & movement', sk:'music', kids:['k1','k2','k3'], days:[1,3],      start:690,  dur:25, titles:{ko:'음악과 율동'} },
-      { id:'e16', title:'Co-op at Grace Chapel', sk:'out', kids:['k1','k2','k3'], days:[4],     start:780,  dur:150, titles:{ko:'그레이스 채플 코업'} },
-      { id:'e17', title:'Library day',    sk:'read',   kids:['k1','k2','k3'], days:[0],         start:930,  dur:60, titles:{ko:'도서관 가는 날'} },
-      { id:'e18', title:'Soccer practice',sk:'out',    kids:['k1'],           days:[3],         start:990,  dur:60, titles:{ko:'축구 연습'} },
-      { id:'e19', title:'Ballet class',   sk:'music',  kids:['k2'],           days:[1],         start:960,  dur:45, titles:{ko:'발레 수업'} },
-      { id:'e20', title:'Dentist',        sk:'out',    kids:['k2','k3'],      date:d(2),        start:660,  dur:60, titles:{ko:'치과'} },
-      { id:'e21', title:'Field trip: the aquarium', sk:'sci', kids:['k1','k2','k3'], date:d(6), start:570, dur:210, titles:{ko:'현장학습: 수족관'} },
-      { id:'e22', title:'Library story hour', sk:'read', kids:['k2','k3'],    date:d(13),       start:630,  dur:60, titles:{ko:'도서관 이야기 시간'} }
+      {
+        id:'e2',
+        title:'Math',
+        sk:'math',
+        kids:['k1'],
+        days:[0,2,4],
+        start:600,
+        dur:40,
+        date:null,
+        titles:{ ko:'수학' }
+      },
+      {
+        id:'e8',
+        title:'Spritual Diary',
+        sk:'write',
+        kids:['k1', 'k2', 'k3'],
+        days:[0,1,2,3,4,5,6],
+        start:1200,
+        dur:30,
+        date:null,
+        titles:{ ko:'영성일기' }
+      },
+      {
+        id:'e21',
+        title:'Field trip: the aquarium',
+        sk:'sci',
+        kids:['k1', 'k2', 'k3'],
+        date:'2026-09-06',
+        start:570,
+        dur:210,
+        titles:{ ko:'현장학습: 수족관' }
+      },
+      {
+        id:'e22',
+        title:'Library story hour',
+        sk:'read',
+        kids:['k2', 'k3'],
+        date:'2026-09-13',
+        start:630,
+        dur:60,
+        titles:{ ko:'도서관 이야기 시간' }
+      }
     ],
-
     rewards: [
-      { id:'w1', name:'Movie night pick', emoji:'🍿', cost:60,  note:'You choose the film' },
-      { id:'w2', name:'Stay up 30 min',   emoji:'🌙', cost:80,  note:'One weekend night' },
-      { id:'w3', name:'Pick dinner',      emoji:'🍕', cost:100, note:'Anything we can cook' },
-      { id:'w4', name:'Park afternoon',   emoji:'🛝', cost:120, note:'Two hours, your choice' },
-      { id:'w5', name:'Ice cream trip',   emoji:'🍦', cost:150, note:'Two scoops' },
-      { id:'w6', name:'A new book',       emoji:'📚', cost:200, note:'Bookshop, you pick' },
-      { id:'w7', name:'Toy shop visit',   emoji:'🧸', cost:400, note:'Up to $10' },
+      { id:'w1', name:'Movie night pick', emoji:'🍿', cost:60, note:'You choose the film' },
+      { id:'w2', name:'Stay up 30 min', emoji:'🌙', cost:80, note:'One weekend night' },
+      { id:'w3', name:'Pick dinner', emoji:'🍕', cost:100, note:'Anything we can cook' },
+      { id:'w4', name:'Park afternoon', emoji:'🛝', cost:120, note:'Two hours, your choice' },
+      { id:'w5', name:'Ice cream trip', emoji:'🍦', cost:150, note:'Two scoops' },
+      { id:'w6', name:'A new book', emoji:'📚', cost:200, note:'Bookshop, you pick' },
+      { id:'w7', name:'Toy shop visit', emoji:'🧸', cost:400, note:'Up to $10' },
       { id:'w8', name:'Friend sleepover', emoji:'⛺', cost:500, note:'Invite one friend' }
     ],
-
-    redemptions: [],      /* {id, kid, rewardId, name, emoji, cost, at, status} */
-    completions: {},      /* "kidId|taskId|YYYY-MM-DD" -> true */
-    eventDone: {},        /* "eventId|YYYY-MM-DD" -> true */
-    exceptions: {},       /* eventId -> [YYYY-MM-DD] skipped occurrences */
-
+    redemptions: [],
+    completions: {},
+    eventDone: {},
+    exceptions: {},
     settings: {
       schoolName:'Bennett Family Academy',
-      yearStart: ymd(addDays(TODAY, -164)),
+      yearStart:'2026-03-20',
       targetDays:180,
       schoolDays:[0,1,2,3,4],
       starRoutine:5,
@@ -112,10 +299,10 @@ function seedDB(){
       theme:'auto',
       sound:true,
       effects:true,
-      railHidden:false,
       showTips:true,
-      tipsOff:[],
-      seenWelcome:false
+      tipsOff:['t-routine', 't-kids'],
+      seenWelcome:true,
+      railHidden:false
     }
   };
 }

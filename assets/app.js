@@ -112,10 +112,12 @@ function handleAction(action){
     case 'never-mind': closeTopModal(); toast('Press ? on any screen for a tour'); return;
 
     /* ---- routine board ---- */
-    case 'slot': state.slot = arg; render(); return;
+    case 'slot': state.slot = arg; state.slotManual = true; render(); return;
     case 'day-prev': state.cursor = addDays(state.cursor, -1); render(); return;
     case 'day-next': state.cursor = addDays(state.cursor, 1); render(); return;
-    case 'day-today': state.cursor = TODAY; render(); return;
+    case 'day-today':
+      state.cursor = TODAY; state.slot = currentSlot(); state.slotManual = false;
+      render(); return;
     case 'task': {
       var kidId = arg, taskId = arg2, dt = state.cursor;
       var kd = kid(kidId);
@@ -350,6 +352,30 @@ document.addEventListener('change', function(e){
 });
 
 window.addEventListener('hashchange', routeFromHash);
+
+/* The board lives on a kitchen tablet that is never reloaded, so it has to
+   notice noon, 5pm and midnight on its own. A slot the user picked by hand is
+   left alone until they tap Today again. */
+function clockTick(){
+  var changed = false;
+  var t = today();
+  if (ymd(t) !== ymd(TODAY)){                 /* rolled past midnight */
+    var wasOnToday = sameDay(state.cursor, TODAY);
+    TODAY = t;
+    if (wasOnToday) state.cursor = t;
+    state.slotManual = false;
+    changed = true;
+  }
+  if (!state.slotManual){
+    var s = currentSlot();
+    if (s !== state.slot){ state.slot = s; changed = true; }
+  }
+  if (changed && !$('.kidwrap') && !_modalStack.length) render();
+}
+setInterval(clockTick, 30000);
+document.addEventListener('visibilitychange', function(){
+  if (!document.hidden) clockTick();
+});
 
 /* ---------------- boot ---------------- */
 (function init(){

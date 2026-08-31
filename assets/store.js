@@ -291,8 +291,6 @@ function seedDB(){
       schoolDays:[0,1,2,3,4],
       starRoutine:5,
       starChore:10,
-      slotBonus:10,
-      weeklyBonus:25,
       carryOver:true,
       parentApproves:true,
       stateCode:'PA',
@@ -499,14 +497,11 @@ function removeReward(id){
 
 var SLOT_IDS = ['morning', 'midday', 'evening'];
 
-/* stars a child earned on one date: task values + a bonus per cleared slot */
+/* stars a child earned on one date: the value of each task they ticked */
 function starsOn(kidId, dateObj){
   var total = 0;
   tasksFor(kidId, dateObj).forEach(function(t){
     if (isTaskDone(kidId, t.id, dateObj)) total += (+t.stars || 0);
-  });
-  SLOT_IDS.forEach(function(s){
-    if (slotComplete(kidId, dateObj, s)) total += (+DB.settings.slotBonus || 0);
   });
   return total;
 }

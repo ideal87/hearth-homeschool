@@ -140,7 +140,7 @@ function handleAction(action){
         } else if (!wasComplete && slotComplete(kidId, dt, state.slot)){
           setTimeout(function(){
             FX.slotDone();
-            toast(t('toastSlot', L, { name:kname(kidId), slot:t('slot_' + state.slot, L), b:DB.settings.slotBonus }), 'gold', '🏅');
+            toast(t('toastSlot', L, { name:kname(kidId), slot:t('slot_' + state.slot, L) }), 'gold', '🏅');
           }, 420);
         }
       }
@@ -348,7 +348,7 @@ document.addEventListener('change', function(e){
   var val = el.type === 'number' ? Math.max(0, +el.value || 0) : el.value;
   setSetting(key, val);
   toast('Saved', 'ok');
-  if (key === 'slotBonus' || key === 'carryOver') render();
+  if (key === 'carryOver') render();
 });
 
 window.addEventListener('hashchange', routeFromHash);

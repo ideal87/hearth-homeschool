@@ -115,8 +115,8 @@ var TOURS = {
       body:'The dashed cards are entries from the <b>Calendar</b> scheduled for that child today, dropped into the right part of the day. The calendar itself never shows routines - that would bury it in "brush teeth".' },
     { sel:'.task', emoji:'👆', title:'The whole row is the button',
       body:'No tiny checkbox to aim at. Tap anywhere and it ticks, turns the child&rsquo;s colour, and pays out its stars.' },
-    { sel:'.bonus, .celebrate', emoji:'🏅', title:'Bonus for a clean sweep',
-      body:'Clearing a whole slot pays a bonus on top of the individual stars - which is what actually gets the last two jobs done. Set the amount in Settings.' },
+    { sel:'.kidcol-foot', emoji:'⭐', title:'Stars add up as you go',
+      body:'Each task is worth what you set it to, and the running total for the day sits at the foot of every column.' },
     { sel:'[data-action="manage-tasks"]', emoji:'✏️', title:'Add your own',
       body:'<b>Manage</b> opens the full list: add, edit or delete routines and chores, set who does them, which days, and what they are worth.' }
   ],
@@ -145,8 +145,8 @@ var TOURS = {
       body:'Hand the tablet over: only their tasks, in huge rows, with their star total. They sign in by tapping an animal, not typing a password.' }
   ],
   settings: [
-    { sel:'[data-set="slotBonus"]', emoji:'⭐', title:'Star values are yours',
-      body:'Change the slot bonus and go back to the board - every total recalculates immediately.' },
+    { sel:'[data-set="starRoutine"]', emoji:'⭐', title:'Star values are yours',
+      body:'These are the defaults for new tasks. Each task carries its own value, which you can change from <b>Manage</b> on the board.' },
     { sel:'[data-action="export-data"]', emoji:'💾', title:'It is your data',
       body:'Everything lives in this browser only. Export a JSON snapshot to keep it, or import one to move it to another machine.' },
     { sel:'.card.mock', emoji:'🚧', title:'Marked mockup',

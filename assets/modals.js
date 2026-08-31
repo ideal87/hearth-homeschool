@@ -495,7 +495,7 @@ function kidMode(kidId){
         (!tasks.length && !evs.length ? '<div class="ph">' + t('nothingToDo', L) + '</div>' : '') +
         (slotComplete(kidId, dt, state.slot)
           ? '<div class="celebrate"><span class="em">🎉</span><div class="ct">' +
-            t('slotDoneKid', L, { slot:t('slot_' + state.slot, L), b:DB.settings.slotBonus }) + '</div></div>'
+            t('slotDoneKid', L, { slot:t('slot_' + state.slot, L) }) + '</div></div>'
           : '<div class="ph">' + t('tapWhenDone', L) + '</div>') +
       '</div>';
   }
@@ -534,7 +534,7 @@ function kidMode(kidId){
         } else if (!wasComplete && slotComplete(kidId, TODAY, state.slot)){
           setTimeout(function(){
             FX.slotDone();
-            toast(t('slotDoneKid', L, { slot:t('slot_' + state.slot, L), b:DB.settings.slotBonus }), 'gold', '🏅');
+            toast(t('slotDoneKid', L, { slot:t('slot_' + state.slot, L) }), 'gold', '🏅');
           }, 260);
         }
       }

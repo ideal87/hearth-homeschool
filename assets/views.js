@@ -126,13 +126,7 @@ function kidColumn(k, dt){
         '<div class="ct">' + t('allDone', L) + '</div>' +
         '<div class="tiny" style="margin-top:4px;color:var(--gold-ink)">' +
           t('starsEarned', L, { n:starsOn(k.id, dt) }) + '</div></div>'
-      : done
-        ? '<div class="bonus won">🏅<span class="grow">' +
-          t('bonusWon', L, { slot:slotName, b:DB.settings.slotBonus }) + '</span></div>'
-        : prog.total
-          ? '<div class="bonus" style="opacity:.65">🏅<span class="grow">' +
-            t('bonusPending', L, { n:prog.total, b:DB.settings.slotBonus }) + '</span></div>'
-          : '') +
+      : '') +
 
     '<div class="kidcol-foot">' +
       '<span>' + t('starsEarnedToday', L, { n:starsOn(k.id, dt) }) + '</span>' +
@@ -240,9 +234,9 @@ function rewardsView(){
 
   return tipBanner('t-rewards',
       'Stars in, rewards out',
-      'Routine steps and chores pay stars; clearing a whole slot pays a <b>' + DB.settings.slotBonus +
-      '-star bonus</b>. Banks are worked out from the ticks on the routine board, so they can never drift apart. ' +
-      'Star values and prices are yours to set in Settings.') +
+      'Every routine step and chore is worth the stars you set on it. Banks are worked out from the ' +
+      'ticks on the routine board, so they can never drift apart. Star values and reward prices are ' +
+      'yours to set in Settings.') +
     banks + approvals + store +
 
     '<div class="grid-2col">' +
@@ -469,12 +463,9 @@ function settingsView(){
                 '<input class="inp" type="number" min="0" data-set="starRoutine" value="' + s.starRoutine + '"></div>' +
               '<div class="field"><label>Default chore</label>' +
                 '<input class="inp" type="number" min="0" data-set="starChore" value="' + s.starChore + '"></div>' +
-              '<div class="field"><label>Bonus for a whole slot</label>' +
-                '<input class="inp" type="number" min="0" data-set="slotBonus" value="' + s.slotBonus + '"></div>' +
-              '<div class="field"><label>Weekly streak bonus</label>' +
-                '<input class="inp" type="number" min="0" data-set="weeklyBonus" value="' + s.weeklyBonus + '"></div>' +
             '</div>' +
-            '<div class="hint">The slot bonus applies immediately - go back to the board and watch the totals change.</div>' +
+            '<div class="hint">These are the defaults for new tasks. Each task keeps its own value, ' +
+            'editable from <b>Manage</b> on the board.</div>' +
           '</div>' +
           '<div class="list">' +
             settingRow('Parent approves redemptions',

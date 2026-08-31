@@ -58,6 +58,16 @@ function eventRow(k, ev, L){
   '</button>';
 }
 
+function rewardRow(r){
+  var done = isRedemptionDone(r);
+  return '<button class="rewardrow' + (done ? ' done' : '') +
+    '" data-action="reward-done:' + r.id + '">' +
+    '<span class="task-emoji">' + r.emoji + '</span>' +
+    '<span class="grow"><span class="task-title">' + esc(r.name) + '</span></span>' +
+    starPill('-' + r.cost) + checkCircle() +
+  '</button>';
+}
+
 function kidColumn(k, dt){
   var slot = state.slot;
   var L = k.lang || 'en';                       /* this child reads in their own language */
@@ -70,6 +80,7 @@ function kidColumn(k, dt){
     return e.kids.indexOf(k.id) > -1 && slotForMinutes(e.start) === slot;
   });
 
+  var due = rewardsDue(k.id, dt);        /* cashed in and not collected yet */
   var prog = slotProgress(k.id, dt, slot);
   var day = dayProgress(k.id, dt);
   var done = slotComplete(k.id, dt, slot);
@@ -115,6 +126,11 @@ function kidColumn(k, dt){
     (evs.length
       ? '<div class="slotlabel">📅 ' + t('todaysLessons', L) + '<span class="ct">' + evs.length + '</span></div>' +
         '<div class="tasklist">' + evs.map(function(e){ return eventRow(k, e, L); }).join('') + '</div>'
+      : '') +
+
+    (due.length
+      ? '<div class="slotlabel">🎁 ' + t('rewardSection', L) + '<span class="ct">' + due.length + '</span></div>' +
+        '<div class="tasklist">' + due.map(function(r){ return rewardRow(r); }).join('') + '</div>'
       : '') +
 
     (!tasks.length && !evs.length

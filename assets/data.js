@@ -94,7 +94,17 @@ var PALETTES = [
   { id:'k4', name:'Amber' }, { id:'k5', name:'Sky' },  { id:'k6', name:'Mint' }
 ];
 var KID_EMOJI = ['🦊','🐰','🐻','🐸','🦁','🐬','🦉','🐢','🦋','🐼','🐨','🦄'];
-var TASK_EMOJI = ['⏰','👕','🦷','🥣','🐕','🪴','☀️','🧹','🍽️','📖','📚','⚽','🍴','🥤','🧸','🧺','🎒','🌙','🛏️','🚿','🎨','🧦','💧','🗑️'];
+/* Routine tasks can also use the subject icons the calendar uses, so
+   "Math practice" can look like Math. Events do not get the household icons -
+   an event's picture comes from its subject. */
+var TASK_EMOJI = (function(){
+  var base = ['⏰','👕','🦷','🥣','🐕','🪴','🧹','🍽️','📚','🍴','🥤','🧸','🧺','🎒','🌙','🛏️','🚿','🧦','💧','🗑️','🏃','🎵'];
+  Object.keys(SUBJECTS).forEach(function(k){
+    var e = SUBJECTS[k].emoji;
+    if (base.indexOf(e) === -1) base.push(e);
+  });
+  return base;
+})();
 var REWARD_EMOJI = ['🍿','🌙','🍕','🛝','🍦','📚','🧸','⛺','🎬','🎮','🚲','🏊'];
 var GRADES = ['Pre-K','Kindergarten','Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6'];
 

@@ -30,9 +30,17 @@ function renderRail(){
 function renderTopbar(){
   var v = VIEWS[state.view];
   return '<div class="topbar-row">' +
-      '<div class="grow"><div class="page-title">' + v.title +
+      '<div class="topbar-title"><div class="page-title">' + v.title +
         (v.live ? '' : ' <span class="badge badge-mock">mockup</span>') + '</div>' +
-        (v.sub ? '<div class="page-sub">' + v.sub + '</div>' : '') + '</div>' +
+        (v.sub ? '<div class="page-sub hide-sm">' + v.sub + '</div>' : '') + '</div>' +
+      '<div class="familybar" data-tour="family">' +
+        '<button class="chip' + (!state.filter.length ? ' on' : '') + '" data-action="filter-all">👨‍👩‍👧 Everyone</button>' +
+        DB.kids.map(function(k){
+          return '<button class="chip ' + k.color + (state.filter.indexOf(k.id) > -1 ? ' on tint' : '') +
+                 '" data-action="filter:' + k.id + '">' + k.emoji + ' ' + esc(k.name) + '</button>';
+        }).join('') +
+      '</div>' +
+      '<div class="topbar-actions">' +
       '<button class="btn btn-ghost btn-icon hide-sm" data-action="toggle-rail" ' +
         'aria-label="' + (DB.settings.railHidden ? 'Show menu' : 'Hide menu') + '" ' +
         'title="' + (DB.settings.railHidden ? 'Show the menu' : 'Hide the menu for a wider board') + '">' +
@@ -44,13 +52,7 @@ function renderTopbar(){
       (state.view === 'calendar'
         ? '<button class="btn btn-primary" data-action="new-event">' + icon('plus', 'i-sm') + '<span class="hide-sm">Event</span></button>'
         : '<button class="btn btn-primary" data-action="manage-tasks">' + icon('plus', 'i-sm') + '<span class="hide-sm">Task</span></button>') +
-    '</div>' +
-    '<div class="familybar" data-tour="family">' +
-      '<button class="chip' + (!state.filter.length ? ' on' : '') + '" data-action="filter-all">👨‍👩‍👧 Everyone</button>' +
-      DB.kids.map(function(k){
-        return '<button class="chip ' + k.color + (state.filter.indexOf(k.id) > -1 ? ' on tint' : '') +
-               '" data-action="filter:' + k.id + '">' + k.emoji + ' ' + esc(k.name) + '</button>';
-      }).join('') +
+      '</div>' +
     '</div>';
 }
 
@@ -144,6 +146,13 @@ function handleAction(action){
           }, 420);
         }
       }
+      return;
+    }
+    case 'reward-done': {
+      var got = toggleRedemptionDone(arg, state.cursor);
+      FX.tick($('[data-action="reward-done:' + arg + '"]'), got);
+      render();
+      if (got) toast('Enjoy it!', 'gold', '🎁');
       return;
     }
     case 'kid-lang': langPickerModal(arg); return;

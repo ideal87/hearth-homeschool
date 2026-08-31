@@ -562,13 +562,40 @@ function starBank(kidId){
 function redeem(kidId, rewardId){
   var r = rewardById(rewardId);
   if (!r) return null;
+  if (starBank(kidId) < r.cost) return null;   /* never let a bank go negative */
   var rec = {
     id: uid('r'), kid:kidId, rewardId:r.id, name:r.name, emoji:r.emoji, cost:r.cost,
     at: new Date().toISOString(),
+    onYmd: ymd(TODAY),          /* the day it was cashed in, in local time */
+    doneOn: null,               /* the day it was actually collected */
     status: DB.settings.parentApproves ? 'pending' : 'approved'
   };
   DB.redemptions.push(rec); saveDB();
   return rec;
+}
+/* Rewards a child still owes themselves. An approved redemption appears on the
+   board from the day it was cashed in and carries forward until it is ticked;
+   once ticked it shows only on the day it was collected. Stars left the bank at
+   redemption time either way. */
+function rewardsDue(kidId, dateObj){
+  var key = ymd(dateObj);
+  return DB.redemptions.filter(function(r){
+    if (r.kid !== kidId || r.status !== 'approved') return false;
+    var from = r.onYmd || (r.at || '').slice(0, 10);
+    if (from > key) return false;
+    return r.doneOn ? r.doneOn === key : true;
+  });
+}
+function isRedemptionDone(r){ return !!r.doneOn; }
+function toggleRedemptionDone(id, dateObj){
+  var out = false;
+  DB.redemptions.forEach(function(r){
+    if (r.id !== id) return;
+    r.doneOn = r.doneOn ? null : ymd(dateObj);
+    out = !!r.doneOn;
+  });
+  saveDB();
+  return out;
 }
 function setRedemptionStatus(id, status){
   DB.redemptions.forEach(function(r){ if (r.id === id) r.status = status; });

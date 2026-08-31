@@ -484,6 +484,15 @@ function kidMode(kidId){
               '<span class="grow kt">' + esc(itemTitle(e, L)) + '</span>' +
               '<span class="when">' + timeLabel(e.start) + '</span>' + checkCircle() + '</div>';
           }).join('') : '') +
+        (rewardsDue(kidId, dt).length
+          ? '<div class="slotlabel ' + k.color + '">🎁 ' + t('rewardSection', L) + '</div>' +
+            rewardsDue(kidId, dt).map(function(r){
+              return '<div class="kid-task rewardrow' + (isRedemptionDone(r) ? ' done' : '') +
+                '" data-kreward="' + r.id + '">' +
+                '<span class="task-emoji">' + r.emoji + '</span>' +
+                '<span class="grow kt">' + esc(r.name) + '</span>' + checkCircle() + '</div>';
+            }).join('')
+          : '') +
         (tasks.length ? '<div class="slotlabel ' + k.color + '">' + slotOf(state.slot).emoji + ' ' + t('myJobs', L) + '</div>' : '') +
         tasks.map(function(task){
           var done = isTaskDone(kidId, task.id, dt);
@@ -510,6 +519,12 @@ function kidMode(kidId){
     var sl = e.target.closest('[data-kslot]');
     if (sl){ state.slot = sl.getAttribute('data-kslot'); draw(); return; }
 
+    var rw = e.target.closest('[data-kreward]');
+    if (rw){
+      var gotIt = toggleRedemptionDone(rw.getAttribute('data-kreward'), TODAY);
+      FX.tick(rw, gotIt);
+      draw(); return;
+    }
     var evEl = e.target.closest('[data-kev]');
     if (evEl){
       var evOn = toggleEventDone(evEl.getAttribute('data-kev'));

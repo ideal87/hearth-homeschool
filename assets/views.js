@@ -168,7 +168,8 @@ function routineView(){
     '</div>' +
 
     (kids.length
-      ? '<div class="board">' + kids.map(function(k){ return kidColumn(k, dt); }).join('') + '</div>'
+      ? '<div class="board" style="--n:' + kids.length + '">' +
+        kids.map(function(k){ return kidColumn(k, dt); }).join('') + '</div>'
       : '<div class="card"><div class="card-body faint">No children match this filter.</div></div>');
 }
 
@@ -522,8 +523,10 @@ function settingsView(){
               sw(s.sound, 'toggle-set:sound')) +
             settingRow('Stars, confetti and fanfares', 'Particles on a tick, confetti when a slot or the day is cleared',
               sw(s.effects, 'toggle-set:effects')) +
-            settingRow('Try it', 'Play the celebration once',
+            settingRow('Try it', 'Plays the celebration and reports what the audio engine is doing',
               '<button class="btn btn-sm btn-gold" data-action="test-fx">Play</button>') +
+            settingRow('Full-width board', 'Hide the left bar to fit more children on screen',
+              sw(s.railHidden, 'toggle-rail')) +
           '</div>' +
           '<div class="card-foot tiny faint">Both are skipped automatically when the device asks for reduced motion.</div>' +
         '</section>' +

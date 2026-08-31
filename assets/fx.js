@@ -8,22 +8,58 @@
 var FX = {
   ctx: null,
   master: null,
+  lastError: null,
 
-  /* AudioContext can only start from a user gesture, so build it lazily */
+  /* iOS/iPadOS - including Chrome, which is WebKit underneath - will not let a
+     page make sound until an AudioContext is created and resumed inside a real
+     user gesture, and by default routes WebAudio through the "ambient" session,
+     which the ring/silent switch mutes. Both are handled here. */
   ensure: function(){
     if (!DB.settings.sound) return null;
     try {
       if (!FX.ctx){
         var Ctor = window.AudioContext || window.webkitAudioContext;
-        if (!Ctor) return null;
+        if (!Ctor){ FX.lastError = 'no WebAudio'; return null; }
         FX.ctx = new Ctor();
         FX.master = FX.ctx.createGain();
         FX.master.gain.value = 0.32;
         FX.master.connect(FX.ctx.destination);
+        FX.claimPlayback();
       }
-      if (FX.ctx.state === 'suspended') FX.ctx.resume();
+      if (FX.ctx.state !== 'running'){
+        FX.ctx.resume();
+        FX.unlock();
+      }
+      FX.lastError = null;
       return FX.ctx;
-    } catch (e){ return null; }
+    } catch (e){ FX.lastError = e.message; return null; }
+  },
+
+  /* Safari 16.4+: ask for the "playback" audio session so the hardware mute
+     switch does not silence us the way it silences ambient page audio. */
+  claimPlayback: function(){
+    try {
+      if (navigator.audioSession) navigator.audioSession.type = 'playback';
+    } catch (e){}
+  },
+
+  /* the classic iOS unlock: start one silent sample inside the gesture */
+  unlock: function(){
+    try {
+      var buf = FX.ctx.createBuffer(1, 1, 22050);
+      var src = FX.ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(FX.ctx.destination);
+      src.start(0);
+    } catch (e){}
+  },
+
+  /* what to tell the user when they tap Test */
+  status: function(){
+    if (!DB.settings.sound) return 'off in settings';
+    if (!FX.ctx) return 'not started yet';
+    if (FX.lastError) return 'blocked: ' + FX.lastError;
+    return FX.ctx.state;   /* running | suspended | interrupted | closed */
   },
 
   /* one bell-ish partial */
@@ -150,3 +186,19 @@ var FX = {
   slotDone: function(){ FX.fanfare(); FX.confetti(false); },
   dayDone: function(){ FX.hooray(); FX.confetti(true); }
 };
+
+/* Build the context on the very first touch anywhere. Doing it here - inside a
+   genuine gesture, before any sound is needed - is what makes the first chime
+   audible on iPadOS instead of being swallowed. */
+(function primeAudio(){
+  function prime(){ if (DB.settings.sound) FX.ensure(); }
+  ['pointerdown', 'touchend', 'click'].forEach(function(ev){
+    document.addEventListener(ev, prime, { passive: true, capture: true });
+  });
+  /* iPadOS suspends the context when the tab is hidden or a call comes in */
+  document.addEventListener('visibilitychange', function(){
+    if (!document.hidden && FX.ctx && FX.ctx.state !== 'running'){
+      try { FX.ctx.resume(); } catch (e){}
+    }
+  });
+})();

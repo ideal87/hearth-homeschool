@@ -112,6 +112,7 @@ function seedDB(){
       theme:'auto',
       sound:true,
       effects:true,
+      railHidden:false,
       showTips:true,
       tipsOff:[],
       seenWelcome:false

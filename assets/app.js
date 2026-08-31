@@ -2,6 +2,9 @@
    Shell, router, and the single delegated action handler.
    ============================================================ */
 
+function applyRail(){
+  document.body.classList.toggle('rail-hidden', !!DB.settings.railHidden);
+}
 function applyTheme(t){
   if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
   else document.documentElement.removeAttribute('data-theme');
@@ -30,6 +33,10 @@ function renderTopbar(){
       '<div class="grow"><div class="page-title">' + v.title +
         (v.live ? '' : ' <span class="badge badge-mock">mockup</span>') + '</div>' +
         (v.sub ? '<div class="page-sub">' + v.sub + '</div>' : '') + '</div>' +
+      '<button class="btn btn-ghost btn-icon hide-sm" data-action="toggle-rail" ' +
+        'aria-label="' + (DB.settings.railHidden ? 'Show menu' : 'Hide menu') + '" ' +
+        'title="' + (DB.settings.railHidden ? 'Show the menu' : 'Hide the menu for a wider board') + '">' +
+        icon(DB.settings.railHidden ? 'cright' : 'menu') + '</button>' +
       '<button class="btn btn-ghost btn-icon" data-action="theme-cycle" aria-label="Theme" data-tour="theme">' +
         icon(DB.settings.theme === 'dark' ? 'moon' : 'sun') + '</button>' +
       '<button class="btn btn-ghost btn-icon" data-action="tour" aria-label="Help" data-tour="help">' +
@@ -283,7 +290,14 @@ function handleAction(action){
       if (arg === 'sound' && DB.settings.sound) FX.chime();
       toast(DB.settings[arg] ? 'Turned on' : 'Turned off', 'ok');
       return;
-    case 'test-fx': FX.dayDone(); return;
+    case 'test-fx':
+      FX.dayDone();
+      setTimeout(function(){ toast('Audio engine: ' + FX.status(), FX.status() === 'running' ? 'ok' : 'warn'); }, 260);
+      return;
+    case 'toggle-rail':
+      setSetting('railHidden', !DB.settings.railHidden);
+      applyRail(); render();
+      return;
     case 'school-day': {
       var i = +arg;
       var days = DB.settings.schoolDays.slice();
@@ -340,6 +354,7 @@ window.addEventListener('hashchange', routeFromHash);
 /* ---------------- boot ---------------- */
 (function init(){
   applyTheme(DB.settings.theme);
+  applyRail();
   if (!location.hash) location.hash = '#/routine';
   routeFromHash();
   if (!DB.settings.seenWelcome){

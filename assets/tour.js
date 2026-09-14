@@ -106,7 +106,7 @@ var Tour = {
 var TOURS = {
   routine: [
     { sel:'.board', emoji:'📋', title:'One column per child',
-      body:'The whole family on one screen, colour-coded. On a tablet you swipe sideways; on a big screen they sit side by side. Every tick is saved in this browser straight away.' },
+      body:'The whole family on one screen, colour-coded. On a tablet you swipe sideways; on a big screen they sit side by side. Every tick is saved straight away, and syncs to your other devices when signed in.' },
     { sel:'.ringwrap', emoji:'🎯', title:'How far through the day',
       body:'The ring fills as tasks get ticked - a glanceable answer to "are we nearly done?" that works for a child who cannot read yet.' },
     { sel:'.slotbar', emoji:'☀️', title:'Morning, midday, evening',
@@ -134,7 +134,7 @@ var TOURS = {
     { sel:'.cal-toolbar .seg', emoji:'🔍', title:'Day, week or month',
       body:'Week is the planning view, day breaks it out per child, month spots co-op weeks and trips.' },
     { sel:'[data-action="new-event"]', emoji:'➕', title:'Add a real event',
-      body:'Pick who it is for, a subject colour, a time, and whether it repeats weekly or happens once. Saved to this browser.' }
+      body:'Pick who it is for, a subject colour, a time, and whether it repeats weekly or happens once.' }
   ],
   kids: [
     { sel:'.card.tint', emoji:'👧', title:'A profile per child',
@@ -148,7 +148,7 @@ var TOURS = {
     { sel:'[data-set="starRoutine"]', emoji:'⭐', title:'Star values are yours',
       body:'These are the defaults for new tasks. Each task carries its own value, which you can change from <b>Manage</b> on the board.' },
     { sel:'[data-action="export-data"]', emoji:'💾', title:'It is your data',
-      body:'Everything lives in this browser only. Export a JSON snapshot to keep it, or import one to move it to another machine.' },
+      body:'Sign in to sync between devices, or export a JSON snapshot to keep a copy of your own.' },
     { sel:'.card.mock', emoji:'🚧', title:'Marked mockup',
       body:'Cards and screens with this badge are sketches - sync, notifications, and the compliance tracking are not wired up.' }
   ],
@@ -170,8 +170,8 @@ function welcomeModal(){
         '<div class="k3"><span class="em">🎨</span>A colour<br>per child</div>' +
       '</div>' +
       '<p class="sm muted" style="margin:0 0 12px">Built for children in <b>Kindergarten, Grade 1 and Grade 4</b> - so there are no grades, no GPA and no transcripts.</p>' +
-      '<p class="sm muted" style="margin:0 0 12px"><b>Routine, Rewards, Calendar and Kids really work</b>, and everything you change is saved in this browser. <b>Today, Lessons, Progress and Records</b> are still static mockups and say so.</p>' +
-      '<p class="sm muted" style="margin:0">Nothing is uploaded anywhere - Settings has an export if you want a copy.</p>',
+      '<p class="sm muted" style="margin:0 0 12px"><b>Routine, Rewards, Calendar and Kids really work</b>, and everything you change is saved. <b>Today, Lessons, Progress and Records</b> are still static mockups and say so.</p>' +
+      '<p class="sm muted" style="margin:0">Sign in with Google to sync between devices.</p>',
     foot:
       '<button class="btn left btn-ghost" data-action="never-mind">Skip</button>' +
       '<button class="btn btn-primary" data-action="tour-start">Show me the board</button>'

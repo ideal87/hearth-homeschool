@@ -306,26 +306,42 @@ function seedDB(){
 }
 
 /* ---------------- load / save ---------------- */
+/* fill in anything a newer version expects: settings added since this copy
+   was saved, and every section present even if empty */
+function normaliseDB(db){
+  var fresh = seedDB();
+  db.settings = db.settings || {};
+  for (var k in fresh.settings)
+    if (!Object.prototype.hasOwnProperty.call(db.settings, k)) db.settings[k] = fresh.settings[k];
+  ['kids', 'tasks', 'events', 'rewards', 'redemptions'].forEach(function(s){ db[s] = db[s] || []; });
+  ['completions', 'eventDone', 'exceptions'].forEach(function(s){ db[s] = db[s] || {}; });
+  db.version = db.version || 2;
+  return db;
+}
 function loadDB(){
   try {
     var raw = localStorage.getItem(STORE_KEY);
     if (raw){
       var parsed = JSON.parse(raw);
-      if (parsed && parsed.version === 2){
-        var fresh = seedDB();
-        /* fill in any setting added after this browser last saved */
-        for (var k in fresh.settings)
-          if (!Object.prototype.hasOwnProperty.call(parsed.settings || {}, k))
-            (parsed.settings = parsed.settings || {})[k] = fresh.settings[k];
-        return parsed;
-      }
+      if (parsed && parsed.version === 2) return normaliseDB(parsed);
     }
   } catch (e){}
   return seedDB();
 }
+/* Every mutation ends here. The local copy is written first so the device
+   keeps working offline; if cloud sync is signed in, the changed fields go
+   up too (cloud.js works out which). */
 function saveDB(){
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(DB)); return true; }
-  catch (e){ return false; }
+  var ok = true;
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(DB)); } catch (e){ ok = false; }
+  if (window.HearthCloud && window.HearthCloud.push) window.HearthCloud.push();
+  return ok;
+}
+/* Swap in data that arrived from the cloud. Does not push it back. */
+function replaceDB(next){
+  DB = normaliseDB(next);
+  backfillSeedTitles(DB);
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(DB)); } catch (e){}
 }
 function resetDB(){ DB = seedDB(); saveDB(); }
 

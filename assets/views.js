@@ -11,11 +11,35 @@ function mockBanner(what){
   return '<div class="mock-banner">' +
     '<span style="font-size:22px;line-height:1">🚧</span>' +
     '<div class="grow"><b>Static mockup - this screen is not wired up.</b><br>' +
-    what + ' The live, browser-backed screens are <b>Routine</b>, <b>Rewards</b>, ' +
-    '<b>Calendar</b> and <b>Kids</b> - anything you change there is saved in this browser.</div>' +
+    what + ' The live screens are <b>Routine</b>, <b>Rewards</b>, ' +
+    '<b>Calendar</b> and <b>Kids</b> - anything you change there is saved.</div>' +
   '</div>';
 }
-function liveDot(){ return '<span class="live-dot">● Saved in this browser</span>'; }
+function liveDot(){
+  var C = window.HearthCloud;
+  var text = !C ? 'Saved on this device'
+    : C.status === 'synced' || C.status === 'saving' ? 'Synced'
+    : C.status === 'offline' ? 'Offline - will sync'
+    : C.status === 'signed-out' ? 'On this device - sign in to sync'
+    : 'Saved on this device';
+  return '<span class="live-dot">● ' + text + '</span>';
+}
+/* a strip above the board when this device should be syncing but isn't */
+function syncBanner(){
+  var C = window.HearthCloud;
+  if (!C) return '';
+  if (C.status === 'signed-out')
+    return '<div class="tip">' + icon('spark') +
+      '<div class="tip-body"><b>Sign in to sync this device</b>' +
+      '<p>Ticks and changes will then show up on every signed-in device within a second or two.</p></div>' +
+      '<button class="btn btn-sm btn-primary" data-action="sync-signin">Sign in with Google</button></div>';
+  if (C.status === 'denied')
+    return '<div class="mock-banner"><span style="font-size:22px;line-height:1">⚠️</span>' +
+      '<div class="grow"><b>' + esc(C.email) + ' does not have access to this family.</b><br>' +
+      'Sign out and use one of the family\'s Google accounts.</div>' +
+      '<button class="btn btn-sm" data-action="sync-signout">Sign out</button></div>';
+  return '';
+}
 
 /* ------------------------------------------------------------------ */
 /* progress ring                                                        */
@@ -158,7 +182,7 @@ function routineView(){
   var totalStars = DB.kids.reduce(function(a, k){ return a + starsOn(k.id, dt); }, 0);
   var isToday = sameDay(dt, TODAY);
 
-  return tipBanner('t-routine', t('tipTitle', L), t('tipBody', L)) +
+  return syncBanner() + tipBanner('t-routine', t('tipTitle', L), t('tipBody', L)) +
 
     '<div class="cal-toolbar" lang="' + L + '">' +
       '<button class="btn btn-icon" data-action="day-prev" aria-label="&larr;">' + icon('cleft') + '</button>' +
@@ -505,8 +529,16 @@ function settingsView(){
 
         '<section class="card"><div class="card-head"><div class="card-title">💾 Your data</div>' + liveDot() + '</div>' +
           '<div class="list">' +
-            settingRow('Where it lives', 'This browser only (localStorage). Nothing is uploaded.',
-              '<span class="badge badge-ok">local</span>') +
+            (window.HearthCloud && HearthCloud.user
+              ? settingRow('Where it lives', 'Google Firestore (us-west1), synced to every signed-in device. A copy stays on this device for offline use.',
+                  '<span class="badge badge-ok">cloud</span>') +
+                settingRow('Signed in as', esc(HearthCloud.email) + ' &middot; ' + esc(HearthCloud.label()),
+                  '<button class="btn btn-sm" data-action="sync-signout">Sign out</button>')
+              : window.HearthCloud
+                ? settingRow('Where it lives', 'On this device only until you sign in.',
+                    '<button class="btn btn-sm btn-primary" data-action="sync-signin">Sign in</button>')
+                : settingRow('Where it lives', 'This browser only. The cloud version at homeschool-7b68e.firebaseapp.com syncs between devices.',
+                    '<button class="btn btn-sm btn-primary" data-action="sync-handoff">Move to cloud</button>')) +
             settingRow('Back it up', 'Copy a JSON snapshot you can paste back later',
               '<button class="btn btn-sm" data-action="export-data">Export</button>') +
             settingRow('Restore a backup', 'Paste a snapshot to replace everything',

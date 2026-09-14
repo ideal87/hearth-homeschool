@@ -43,7 +43,7 @@ var STRINGS = {
     nothingToDo:'Nothing to do right now!',
     slotDoneKid:'{slot} all done!',
     tipTitle:'The board the whole family runs on',
-    tipBody:'One column per child, colour-coded. Tap <b>☀️ 🌤️ 🌙</b> to move through the day. The dashed cards are lessons scheduled on the calendar for that child today - tap anything to tick it. Every tick is saved in this browser.',
+    tipBody:'One column per child, colour-coded. Tap <b>☀️ 🌤️ 🌙</b> to move through the day. The dashed cards are lessons scheduled on the calendar for that child today - tap anything to tick it. Every tick is saved straight away.',
     rewardSection:'Reward',
     language:'Language'
   },
@@ -72,7 +72,7 @@ var STRINGS = {
     nothingToDo:'지금은 할 일이 없어요!',
     slotDoneKid:'{slot} 전부 완료!',
     tipTitle:'온 가족이 함께 쓰는 보드',
-    tipBody:'아이마다 색깔이 다른 칸이 하나씩 있어요. <b>☀️ 🌤️ 🌙</b> 를 눌러 하루를 이동하세요. 점선 카드는 오늘 그 아이의 달력에 있는 수업이에요. 아무 곳이나 누르면 완료 표시가 되고, 모든 기록은 이 브라우저에 저장돼요.',
+    tipBody:'아이마다 색깔이 다른 칸이 하나씩 있어요. <b>☀️ 🌤️ 🌙</b> 를 눌러 하루를 이동하세요. 점선 카드는 오늘 그 아이의 달력에 있는 수업이에요. 아무 곳이나 누르면 완료 표시가 되고, 모든 기록은 바로 저장돼요.',
     rewardSection:'보상',
     language:'언어'
   },
@@ -101,7 +101,7 @@ var STRINGS = {
     nothingToDo:'¡Nada que hacer ahora mismo!',
     slotDoneKid:'¡Rutina completa!',
     tipTitle:'El tablero de toda la familia',
-    tipBody:'Una columna por niño, con su color. Toca <b>☀️ 🌤️ 🌙</b> para moverte por el día. Las tarjetas con borde discontinuo son las clases del calendario de ese niño para hoy. Todo se guarda en este navegador.',
+    tipBody:'Una columna por niño, con su color. Toca <b>☀️ 🌤️ 🌙</b> para moverte por el día. Las tarjetas con borde discontinuo son las clases del calendario de ese niño para hoy. Todo se guarda al instante.',
     rewardSection:'Premio',
     language:'Idioma'
   },
@@ -130,7 +130,7 @@ var STRINGS = {
     nothingToDo:'Rien à faire pour le moment !',
     slotDoneKid:'Routine terminée !',
     tipTitle:'Le tableau de toute la famille',
-    tipBody:'Une colonne par enfant, avec sa couleur. Touche <b>☀️ 🌤️ 🌙</b> pour parcourir la journée. Les cartes en pointillés sont les cours du calendrier de cet enfant aujourd’hui. Tout est enregistré dans ce navigateur.',
+    tipBody:'Une colonne par enfant, avec sa couleur. Touche <b>☀️ 🌤️ 🌙</b> pour parcourir la journée. Les cartes en pointillés sont les cours du calendrier de cet enfant aujourd’hui. Tout est enregistré aussitôt.',
     rewardSection:'Récompense',
     language:'Langue'
   }

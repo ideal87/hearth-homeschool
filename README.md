@@ -32,11 +32,36 @@ Then open <http://127.0.0.1:8777>.
 Inside Settings, the **Sync**, **Notifications** and **State requirements** cards are
 individually badged `mockup` — everything else on that screen is real.
 
-### Storage
+### Storage and sync
 
-Everything lives in `localStorage` under the key `hearth.db.v2`, on this device only.
-Nothing is uploaded. Settings → **Export** gives you a JSON snapshot; **Import**
-restores one; **Reset** returns to the sample family.
+**Live app: https://homeschool-7b68e.firebaseapp.com** — use this address (the
+`.web.app` one forwards here, because Google sign-in on iPad needs the page and
+the sign-in handler on the same domain).
+
+- **Signed in:** the family's data lives in Google Firestore (`us-west1`) and
+  syncs to every signed-in device within a second or two. A copy stays on the
+  device, so the board works offline and catches up when it reconnects.
+- **Signed out, or on any other address** (GitHub Pages, a double-clicked
+  `index.html`): everything stays in this browser's `localStorage`, exactly as
+  before. The ☁️ button offers **Move to cloud**, which opens the Firebase address
+  and carries this device's data across in the link.
+
+Theme, sound, effects and the hidden-menu setting are **per device** and never
+sync, so the kitchen iPad can differ from a laptop.
+
+Only the Google accounts listed in `firestore.rules` can read or write. That file
+is git-ignored so the addresses stay out of this public repo; copy
+`firestore.rules.example` to start one. The web `apiKey` in `assets/cloud.js` is
+public by design — sign-in plus the rules are what protect the data.
+
+Firestore layout: `families/main` holds kids, tasks, events, rewards,
+redemptions, exceptions and settings; ticks live in `families/main/days/YYYY-MM`
+so no document ever approaches the 1 MiB limit. Every change is pushed as
+individual field updates, so two devices editing different things never
+overwrite each other.
+
+Deploy with `firebase deploy` (Hosting + Firestore rules). Settings → **Export**
+still gives you a JSON snapshot.
 
 ## Per-child language on the routine board
 
@@ -152,6 +177,8 @@ assets/icons.js       inline SVG icon set
 assets/data.js        date helpers, subjects, slots + static data for the mockup screens
 assets/i18n.js        the four language dictionaries and the t() helper
 assets/fx.js          WebAudio chimes + star/confetti particles
+assets/sync-core.js   pure diff / Firestore document mapping (no Firebase imports)
+assets/cloud.js       Firebase module: Google sign-in, live Firestore sync
 assets/store.js       THE LIVE DATA: seed, localStorage persistence, CRUD, star maths
 assets/ui.js          modal / drawer / toast primitives and shared fragments
 assets/views.js       the nine screens

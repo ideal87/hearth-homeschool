@@ -1,0 +1,7 @@
+{
+  "indexes": [],
+  "fieldOverrides": [
+    { "collectionGroup": "days", "fieldPath": "completions", "indexes": [] },
+    { "collectionGroup": "days", "fieldPath": "eventDone", "indexes": [] }
+  ]
+}

@@ -41,6 +41,7 @@ function renderTopbar(){
         }).join('') +
       '</div>' +
       '<div class="topbar-actions">' +
+      syncControl() +
       '<button class="btn btn-ghost btn-icon hide-sm" data-action="toggle-rail" ' +
         'aria-label="' + (DB.settings.railHidden ? 'Show menu' : 'Hide menu') + '" ' +
         'title="' + (DB.settings.railHidden ? 'Show the menu' : 'Hide the menu for a wider board') + '">' +
@@ -55,6 +56,25 @@ function renderTopbar(){
       '</div>' +
     '</div>';
 }
+
+/* the sync control in the top bar */
+function syncControl(){
+  var C = window.HearthCloud;
+  if (!C){
+    if (window.HearthCloudFailed)
+      return '<button class="btn btn-ghost btn-icon" data-action="sync-info" title="Sync could not load" aria-label="Sync">⚠️</button>';
+    return HearthSync.isCloudHost()
+      ? '<span class="btn btn-ghost btn-icon" title="Connecting to the cloud..." aria-label="Connecting">⏳</span>'
+      : '<button class="btn btn-ghost btn-icon" data-action="sync-info" title="Sync between devices" aria-label="Sync">☁️</button>';
+  }
+  if (C.status === 'signed-out')
+    return '<button class="btn btn-sm btn-primary" data-action="sync-signin">Sign in</button>';
+  var glyph = { connecting:'⏳', synced:'☁️', saving:'☁️', offline:'📴', denied:'⚠️', error:'⚠️' }[C.status] || '☁️';
+  return '<button class="btn btn-ghost btn-icon" data-action="sync-info" title="' + esc(C.label()) +
+         '" aria-label="Sync status">' + glyph + '</button>';
+}
+/* top bar only - for sync status flips, so the board doesn't re-animate */
+function renderChrome(){ var tb = $('#topbar'); if (tb) tb.innerHTML = renderTopbar(); }
 
 function render(){
   $('#rail').innerHTML = renderRail();
@@ -326,10 +346,26 @@ function handleAction(action){
       if (off.indexOf(arg) === -1) off.push(arg);
       setSetting('tipsOff', off); render(); return;
     }
+    case 'sync-signin': if (window.HearthCloud) HearthCloud.signIn(); return;
+    case 'sync-signout':
+      if (window.HearthCloud && confirm('Sign out of sync on this device?\n\nThe board keeps working with the data already here, but stops syncing until you sign in again.')){
+        closeTopModal(); HearthCloud.signOut(); toast('Signed out - this device is on its own now', 'ok');
+      }
+      return;
+    case 'sync-info': syncInfoModal(); return;
+    case 'sync-handoff': {
+      var url = HearthSync.handoffUrl(DB);
+      if (!url){ toast('Too much data to carry across by link - use Settings > Export, then Import on the new address', 'warn'); return; }
+      location.href = url;
+      return;
+    }
     case 'export-data': exportModal(); return;
     case 'import-data': importModal(); return;
     case 'reset-demo':
-      if (confirm('Reset everything back to the sample family?\n\nYour children, tasks, events and stars will be replaced.')){
+      if (confirm((window.HearthCloud && HearthCloud.ready
+            ? 'Reset the family data back to the defaults on EVERY signed-in device?'
+            : 'Reset everything back to the default family?') +
+          '\n\nYour children, tasks, events and stars will be replaced.')){
         resetDB(); applyTheme(DB.settings.theme); render();
         toast('Back to the sample data', 'ok', '🔄');
       }

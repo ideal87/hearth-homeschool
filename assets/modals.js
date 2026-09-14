@@ -48,7 +48,7 @@ function wirePickers(root, singles){
 function manageTasksModal(){
   var api = openModal({
     title: 'Routines &amp; chores',
-    sub: 'Saved in this browser',
+    sub: 'Changes save straight away',
     size: 'wide',
     body: '',
     foot: '<button class="btn left btn-primary" data-action="task-new">' + icon('plus', 'i-sm') + 'New task</button>' +
@@ -701,4 +701,49 @@ function importModal(){
       toast(err.message || 'That did not parse', 'warn');
     }
   });
+}
+
+/* ---------------- sync status ---------------- */
+function syncInfoModal(){
+  var C = window.HearthCloud;
+  var body, foot = '<button class="btn" data-close="1">Close</button>';
+
+  if (!C && !HearthSync.isCloudHost()){
+    body =
+      '<p class="sm muted" style="margin-top:0">This address keeps everything on this device. The cloud version ' +
+      'syncs Routine, Rewards, Calendar and Kids between every device you sign in on.</p>' +
+      '<p class="sm muted"><b>Move to cloud</b> opens <b>homeschool-7b68e.firebaseapp.com</b> and brings this ' +
+      'device&rsquo;s data along. If the family is already in the cloud you&rsquo;ll be asked which copy to keep.</p>' +
+      '<p class="sm muted" style="margin-bottom:0">On an iPad, add the new address to the Home Screen afterwards.</p>';
+    foot = '<button class="btn" data-close="1">Not now</button>' +
+           '<button class="btn btn-primary" data-action="sync-handoff">☁️ Move to cloud</button>';
+  } else if (!C){
+    body = window.HearthCloudFailed
+      ? '<p class="sm muted" style="margin-top:0">Sync could not load - usually because this device is offline. ' +
+        'The board still works; changes are kept here. Reload once you&rsquo;re back online.</p>'
+      : '<p class="sm muted" style="margin-top:0">Still connecting to the cloud&hellip;</p>';
+  } else {
+    var rows = {
+      synced:  ['☁️', 'Synced', 'Changes here reach your other signed-in devices within a second or two.'],
+      saving:  ['☁️', 'Saving', 'Sending your latest change.'],
+      connecting: ['⏳', 'Connecting', 'Getting the latest family data. The board still works in the meantime.'],
+      offline: ['📴', 'Offline', 'Changes are kept on this device and sync automatically once it&rsquo;s back online.'],
+      denied:  ['⚠️', 'No access', esc(C.email) + ' is not one of this family&rsquo;s accounts. Sign out and use one that is.'],
+      error:   ['⚠️', 'Sync problem', esc(C.error || 'Something went wrong talking to the cloud.')],
+      'signed-out': ['🔒', 'Not signed in', 'This device keeps its changes to itself until you sign in.']
+    };
+    var r = rows[C.status] || rows.error;
+    body =
+      '<div class="row" style="gap:14px;margin-bottom:6px"><span style="font-size:36px">' + r[0] + '</span>' +
+      '<div class="grow"><div class="bold lg">' + r[1] + '</div>' +
+      (C.email ? '<div class="sm faint">' + esc(C.email) + '</div>' : '') + '</div></div>' +
+      '<p class="sm muted">' + r[2] + '</p>' +
+      '<p class="tiny faint" style="margin-bottom:0">Stored in Google Firestore (us-west1). Theme, sound and the ' +
+      'hidden-menu setting stay per device.</p>';
+    foot = C.user
+      ? '<button class="btn btn-danger left" data-action="sync-signout">Sign out</button><button class="btn" data-close="1">Close</button>'
+      : '<button class="btn" data-close="1">Close</button><button class="btn btn-primary" data-action="sync-signin">Sign in with Google</button>';
+  }
+
+  openModal({ title: 'Sync', sub: 'Sharing this family between devices', size: 'narrow', body: body, foot: foot });
 }

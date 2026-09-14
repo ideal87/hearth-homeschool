@@ -7,6 +7,12 @@
 <title>Hearth - touch homeschool calendar (wireframe)</title>
 <meta name="description" content="Clickable touch-first design wireframe: routines, chores, stars and a family calendar for K-4 homeschoolers.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#11088;</text></svg>">
+<script>
+  /* sign-in only works reliably on iPad when the page and the sign-in handler
+     share a domain, so the .web.app address forwards to .firebaseapp.com */
+  if (location.hostname === 'homeschool-7b68e.web.app')
+    location.replace('https://homeschool-7b68e.firebaseapp.com' + location.pathname + location.search + location.hash);
+</script>
 <link rel="stylesheet" href="assets/styles.css">
 </head>
 <body>
@@ -23,6 +29,8 @@
 <div id="tour-root"></div>
 <div id="toast-root" class="toasts"></div>
 
+<script src="assets/sync-core.js"></script>
+<script>HearthSync.captureHandoff();</script>
 <script src="assets/icons.js"></script>
 <script src="assets/data.js"></script>
 <script src="assets/store.js"></script>
@@ -33,5 +41,15 @@
 <script src="assets/modals.js"></script>
 <script src="assets/tour.js"></script>
 <script src="assets/app.js"></script>
+<script>
+  /* cloud sync: only on the Firebase domains - everywhere else stays local */
+  if (HearthSync.isCloudHost()){
+    var cloud = document.createElement('script');
+    cloud.type = 'module';
+    cloud.src = 'assets/cloud.js';
+    cloud.onerror = function(){ window.HearthCloudFailed = true; if (window.renderChrome) renderChrome(); };
+    document.body.appendChild(cloud);
+  }
+</script>
 </body>
 </html>

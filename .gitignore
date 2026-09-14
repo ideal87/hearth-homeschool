@@ -10,3 +10,9 @@ desktop.ini
 
 # Local scratch
 *.log
+
+# Firebase
+.firebase/
+firestore.rules
+firebase-debug.log
+firestore-debug.log

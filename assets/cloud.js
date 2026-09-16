@@ -178,9 +178,9 @@ onAuthStateChanged(auth, (user) => {
 function attach() {
   mainSnap = daysSnap = null;
   unsubMain = onSnapshot(mainRef, { includeMetadataChanges: true },
-    (snap) => { mainSnap = snap; onSnaps(); }, onListenError);
+    (snap) => { mainSnap = snap; onSnaps(); }, (e) => onListenError(e, 'family document'));
   unsubDays = onSnapshot(daysCol, { includeMetadataChanges: true },
-    (qs) => { daysSnap = qs; onSnaps(); }, onListenError);
+    (qs) => { daysSnap = qs; onSnaps(); }, (e) => onListenError(e, 'day documents'));
   /* if the network is flaky, accept the cached copy rather than wait forever */
   clearTimeout(firstApplyTimer);
   firstApplyTimer = setTimeout(() => { if (!C.ready) onSnaps(true); }, 8000);
@@ -193,9 +193,14 @@ function detach() {
   C.ready = false;
 }
 
-function onListenError(err) {
-  if (err && err.code === 'permission-denied') { detach(); setStatus('denied', ''); return; }
-  setStatus('error', (err && err.message) || 'Could not reach the cloud');
+function onListenError(err, source) {
+  /* naming the source makes a rules problem diagnosable without guesswork */
+  if (err && err.code === 'permission-denied') {
+    detach();
+    setStatus('denied', 'Reading the ' + (source || 'data') + ' was refused.');
+    return;
+  }
+  setStatus('error', ((err && err.message) || 'Could not reach the cloud') + ' (' + (source || '') + ')');
 }
 
 function remoteDB() {

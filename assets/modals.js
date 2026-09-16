@@ -728,7 +728,8 @@ function syncInfoModal(){
       saving:  ['☁️', 'Saving', 'Sending your latest change.'],
       connecting: ['⏳', 'Connecting', 'Getting the latest family data. The board still works in the meantime.'],
       offline: ['📴', 'Offline', 'Changes are kept on this device and sync automatically once it&rsquo;s back online.'],
-      denied:  ['⚠️', 'No access', esc(C.email) + ' is not one of this family&rsquo;s accounts. Sign out and use one that is.'],
+      denied:  ['⚠️', 'No access', esc(C.email) + ' was refused by the database rules. ' +
+                 (C.error ? esc(C.error) + ' ' : '') + 'Either this account is not on the family list, or the rules need redeploying.'],
       error:   ['⚠️', 'Sync problem', esc(C.error || 'Something went wrong talking to the cloud.')],
       'signed-out': ['🔒', 'Not signed in', 'This device keeps its changes to itself until you sign in.']
     };

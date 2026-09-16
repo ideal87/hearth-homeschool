@@ -25,9 +25,13 @@ service cloud.firestore {
     match /families/main {
       allow read, write: if isFamily();
 
-      // one document of ticks per month, e.g. days/2026-09
+      // one document of ticks per month, e.g. days/2026-09.
+      // Read is split from write on purpose: the app listens to the whole
+      // collection, and a query has no single {month} to match a pattern
+      // against, so any condition using the wildcard would deny the listen.
       match /days/{month} {
-        allow read, write: if isFamily() && month.matches('^[0-9]{4}-[0-9]{2}$');
+        allow read: if isFamily();
+        allow write: if isFamily() && month.matches('^[0-9]{4}-[0-9]{2}$');
       }
     }
 

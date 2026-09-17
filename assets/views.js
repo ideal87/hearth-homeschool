@@ -66,7 +66,7 @@ function taskRow(k, task, dt, L){
     '" data-action="task:' + k.id + ':' + task.id + '">' +
     '<span class="task-emoji">' + task.emoji + '</span>' +
     '<span class="grow"><span class="task-title">' + esc(itemTitle(task, L)) + '</span></span>' +
-    starPill(starsFor(task, k.id)) + checkCircle() +
+    (isTeamTask(task) ? teamPill(starsFor(task, k.id)) : starPill(starsFor(task, k.id))) + checkCircle() +
   '</button>';
 }
 function eventRow(k, ev, L){
@@ -88,7 +88,7 @@ function rewardRow(r){
     '" data-action="reward-done:' + r.id + '">' +
     '<span class="task-emoji">' + r.emoji + '</span>' +
     '<span class="grow"><span class="task-title">' + esc(r.name) + '</span></span>' +
-    starPill('-' + r.cost) + checkCircle() +
+    (r.kid === TEAM_ID ? teamPill('-' + r.cost) : starPill('-' + r.cost)) + checkCircle() +
   '</button>';
 }
 
@@ -142,7 +142,8 @@ function kidColumn(k, dt){
       : '') +
 
     (chores.length
-      ? '<div class="slotlabel">🧹 ' + t('chores', L) + '<span class="ct">' +
+      ? '<div class="slotlabel">🧹 ' + t('chores', L) +
+        '<span class="teamtag">' + t('toTeam', L) + '</span><span class="ct">' +
         chores.filter(function(t2){ return isTaskDone(k.id, t2.id, dt); }).length + '/' + chores.length + '</span></div>' +
         '<div class="tasklist">' + chores.map(function(t2){ return taskRow(k, t2, dt, L); }).join('') + '</div>'
       : '') +
@@ -183,16 +184,20 @@ function teamBar(dt, L){
   function stat(n, label){
     return '<div class="teamstat"><b>' + n + '</b><small>' + label + '</small></div>';
   }
+  var due = rewardsDue(TEAM_ID, dt);          /* family rewards still to collect */
   return '<section class="teambar" lang="' + L + '">' +
-    '<span class="teambar-icon">🤝</span>' +
-    '<div class="grow teambar-text"><div class="bold">' + t('teamStars', L) + '</div>' +
-      '<div class="tiny faint">' + t('teamHint', L) + '</div></div>' +
-    '<div class="teamfaces">' + DB.kids.map(function(k){
-      return '<span class="teamface ' + k.color + '" title="' + esc(k.name) + '">' + k.emoji + '</span>';
-    }).join('') + '</div>' +
-    stat('⭐ ' + ts.today, t('statToday', L)) +
-    stat(ts.week, t('statWeek', L)) +
-    stat(ts.total, t('statTotal', L)) +
+    '<div class="teambar-row">' +
+      '<span class="teambar-icon">🤝</span>' +
+      '<div class="grow teambar-text"><div class="bold">' + t('teamStars', L) + '</div>' +
+        '<div class="tiny faint">' + t('teamHint', L) + '</div></div>' +
+      '<div class="teamfaces">' + DB.kids.map(function(k){
+        return '<span class="teamface ' + k.color + '" title="' + esc(k.name) + '">' + k.emoji + '</span>';
+      }).join('') + '</div>' +
+      stat('🤝 ' + ts.bank, t('statPot', L)) +
+      stat(ts.today + ' / ' + maxTeamStarsOn(dt), t('statToday', L)) +
+      stat(ts.week + ' / ' + maxTeamStarsInWeek(dt), t('statWeek', L)) +
+    '</div>' +
+    (due.length ? '<div class="teamdue">' + due.map(function(r){ return rewardRow(r); }).join('') + '</div>' : '') +
   '</section>';
 }
 
@@ -237,13 +242,18 @@ function rewardsView(){
 
   var banks = '<div class="grid-3" style="margin-bottom:20px">' + kids.map(function(k){
     var bank = starBank(k.id);
-    var next = DB.rewards.slice().sort(function(a, b){ return a.cost - b.cost; })
+    var next = DB.rewards.filter(function(r){ return !r.team; })
+                 .sort(function(a, b){ return a.cost - b.cost; })
                  .filter(function(r){ return r.cost > bank; })[0];
+    var left = rewardsLeft(k.id), lim = rewardLimit();
     return '<div class="bankcard ' + k.color + '">' +
       '<div class="row" style="margin-bottom:14px"><span style="font-size:34px">' + k.emoji + '</span>' +
         '<div class="grow"><div class="bold lg">' + esc(k.name) + '</div>' +
         '<div class="tiny" style="color:var(--c)">🔥 ' + (k.streak || 0) + '-day streak</div></div></div>' +
       '<div class="bignum">' + bank + ' ⭐</div>' +
+      '<div class="tiny faint" style="margin-top:4px">' +
+        (lim ? left + ' of ' + lim + ' reward' + (lim === 1 ? '' : 's') + ' left this month'
+             : 'No monthly limit') + '</div>' +
       '<div class="sm" style="color:var(--c);margin:12px 0 7px;font-weight:700">' +
         (next ? (next.cost - bank) + ' more for ' + esc(next.name) : 'Everything in the store is unlocked!') + '</div>' +
       progressBar(bank, next ? next.cost : bank || 1, 'tint') +
@@ -261,7 +271,7 @@ function rewardsView(){
             '<span style="font-size:26px">' + r.emoji + '</span>' +
             '<div class="grow"><div class="bold">' + esc(r.name) + '</div>' +
             '<div class="tiny faint">' + kname(r.kid) + ' asked for this</div></div>' +
-            starPill(r.cost) +
+            (r.kid === TEAM_ID ? teamPill(r.cost) : starPill(r.cost)) +
             '<button class="btn btn-sm btn-ghost" data-action="deny:' + r.id + '">Deny</button>' +
             '<button class="btn btn-sm btn-primary" data-action="approve:' + r.id + '">Approve</button>' +
           '</div>';
@@ -273,8 +283,9 @@ function rewardsView(){
     '<div class="card-head"><div class="card-title">🏪 Reward store</div>' +
       '<div class="row">' + liveDot() +
       '<button class="btn btn-sm" data-action="add-reward">' + icon('plus', 'i-sm') + 'Add</button></div></div>' +
-    '<div class="card-body"><div class="grid-3">' + DB.rewards.map(function(r){
-      var best = DB.kids.length ? Math.max.apply(null, DB.kids.map(function(k){ return starBank(k.id); })) : 0;
+    '<div class="card-body"><div class="grid-3">' + DB.rewards.filter(function(r){ return !r.team; }).map(function(r){
+      var canSpend = DB.kids.filter(function(k){ return rewardsLeft(k.id); });
+      var best = Math.max.apply(null, canSpend.map(function(k){ return starBank(k.id); }).concat([0]));
       var locked = best < r.cost;
       return '<div class="rewardcard' + (locked ? ' locked' : '') + '">' +
         '<span class="em">' + r.emoji + '</span>' +
@@ -291,14 +302,50 @@ function rewardsView(){
     }).join('') + '</div></div>' +
   '</section>';
 
+  /* the family pot: filled by chores, spent on things you all do together */
+  var lim = rewardLimit(), pot = teamBank(), teamLeft = rewardsLeft(TEAM_ID);
+  var teamRewards = DB.rewards.filter(function(r){ return r.team; });
+  var teamCard = '<section class="card" style="margin-bottom:20px">' +
+    '<div class="card-head"><div class="card-title">🤝 Team pot</div>' +
+      '<div class="row">' + liveDot() +
+      '<button class="btn btn-sm" data-action="add-team-reward">' + icon('plus', 'i-sm') + 'Add</button></div></div>' +
+    '<div class="card-body">' +
+      '<div class="row wrap" style="gap:14px;margin-bottom:16px">' +
+        '<div><div class="bignum">' + pot + ' 🤝</div>' +
+          '<div class="sm faint">Every chore star, whoever ticked it. Routines stay with the child.</div></div>' +
+        '<div class="grow"></div>' +
+        '<span class="badge' + (teamLeft ? '' : ' badge-warn') + '">' +
+          (lim ? teamLeft + ' of ' + lim + ' left this month' : 'No monthly limit') + '</span>' +
+      '</div>' +
+      (teamRewards.length
+        ? '<div class="grid-3">' + teamRewards.map(function(r){
+            var short = r.cost - pot;
+            var locked = short > 0 || !teamLeft;
+            return '<div class="rewardcard' + (locked ? ' locked' : '') + '">' +
+              '<span class="em">' + r.emoji + '</span>' +
+              '<div class="bold">' + esc(r.name) + '</div>' +
+              '<div class="tiny faint">' + esc(r.note || '') + '</div>' +
+              teamPill(r.cost, true) +
+              '<div class="row" style="width:100%">' +
+                '<button class="btn btn-sm grow ' + (locked ? '' : 'btn-gold') + '" data-action="redeem:' + r.id + '"' +
+                  (locked ? ' disabled' : '') + '>' +
+                  (short > 0 ? short + ' more' : !teamLeft ? 'None left' : 'Cash in') + '</button>' +
+                '<button class="btn btn-sm btn-icon" data-action="edit-reward:' + r.id + '" aria-label="Edit">' +
+                  icon('edit', 'i-sm') + '</button>' +
+              '</div>' +
+            '</div>';
+          }).join('') + '</div>'
+        : '<div class="tiny faint">No family rewards yet - press Add.</div>') +
+    '</div></section>';
+
   var history = DB.redemptions.filter(function(r){ return r.status !== 'pending'; });
 
   return tipBanner('t-rewards',
       'Stars in, rewards out',
-      'Every routine step and chore is worth the stars you set on it. Banks are worked out from the ' +
-      'ticks on the routine board, so they can never drift apart. Star values and reward prices are ' +
-      'yours to set in Settings.') +
-    banks + approvals + store +
+      'Routines pay the child who ticks them. <b>Chores pay the team pot</b> instead, which buys the ' +
+      'outings and treats you all share. Banks are worked out from the ticks on the routine board, so ' +
+      'they can never drift apart.') +
+    banks + approvals + teamCard + store +
 
     '<div class="grid-2col">' +
       '<section class="card"><div class="card-head"><div class="card-title">🏅 Badges</div></div>' +
@@ -328,7 +375,8 @@ function rewardsView(){
                 '<div class="grow"><div class="sm bold">' + esc(r.name) + '</div>' +
                 '<div class="tiny faint">' + kname(r.kid) + ' &middot; ' +
                 (r.status === 'denied' ? 'denied' : 'approved') + '</div></div>' +
-                (r.status === 'denied' ? '<span class="badge">refunded</span>' : starPill('-' + r.cost)) + '</div>';
+                (r.status === 'denied' ? '<span class="badge">refunded</span>'
+                 : r.kid === TEAM_ID ? teamPill('-' + r.cost) : starPill('-' + r.cost)) + '</div>';
             }).join('')
           : emptyRow('Nothing cashed in yet.')) + '</div>' +
         (DB.settings.parentApproves
@@ -525,8 +573,14 @@ function settingsView(){
               '<div class="field"><label>Default chore</label>' +
                 '<input class="inp" type="number" min="0" data-set="starChore" value="' + s.starChore + '"></div>' +
             '</div>' +
-            '<div class="hint">These are the defaults for new tasks. Each task keeps its own value, ' +
-            'editable from <b>Manage</b> on the board.</div>' +
+            '<div class="hint">Defaults for new tasks; each task keeps its own value per child, ' +
+            'editable from <b>Manage</b> on the board. <b>Chore stars go to the team pot</b>, not to ' +
+            'the child who ticks them.</div>' +
+            '<div class="field" style="margin:14px 0 0"><label>Rewards each month</label>' +
+              '<input class="inp" type="number" min="0" max="31" data-set="rewardsPerMonth" value="' +
+              (s.rewardsPerMonth == null ? 1 : s.rewardsPerMonth) + '"></div>' +
+            '<div class="hint">How many rewards one child may cash in per calendar month. The team pot ' +
+            'has an allowance of its own, the same size. 0 means no limit.</div>' +
           '</div>' +
           '<div class="list">' +
             settingRow('Parent approves redemptions',

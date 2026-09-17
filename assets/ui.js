@@ -116,6 +116,10 @@ function kidDot(kidId){
 function starPill(n, big){
   return '<span class="star' + (big ? ' big' : '') + '">⭐ ' + n + '</span>';
 }
+/* chores pay the family pot, so they wear the handshake instead of a star */
+function teamPill(n, big){
+  return '<span class="star team' + (big ? ' big' : '') + '">🤝 ' + n + '</span>';
+}
 function progressBar(value, total, cls, fat){
   return '<div class="bar' + (fat ? ' fat' : '') + '"><i class="' + (cls || '') +
          '" style="width:' + Math.min(100, pct(value, total)) + '%"></i></div>';

@@ -152,7 +152,10 @@ function handleAction(action){
       FX.tick($('[data-action="task:' + kidId + ':' + taskId + '"]'), nowDone);
       render();
       if (nowDone && def){
-        toast(t('toastStars', L, { name:kname(kidId), n:starsFor(def, kidId) }), 'gold', '⭐');
+        toast(isTeamTask(def)
+          ? t('toastTeam', L, { n:starsFor(def, kidId) })
+          : t('toastStars', L, { name:kname(kidId), n:starsFor(def, kidId) }),
+          'gold', isTeamTask(def) ? '🤝' : '⭐');
         var nowDay = dayProgress(kidId, dt);
         if (nowDay.total > 0 && nowDay.done === nowDay.total && wasDay.done !== wasDay.total){
           setTimeout(function(){
@@ -303,6 +306,7 @@ function handleAction(action){
     case 'redeem': closeTopModal(); redeemModal(arg); return;
     case 'spend': spendModal(arg); return;
     case 'add-reward': rewardEditModal(null); return;
+    case 'add-team-reward': rewardEditModal(null, true); return;
     case 'edit-reward': rewardEditModal(arg); return;
     case 'reward-del': {
       var rw = rewardById(arg);

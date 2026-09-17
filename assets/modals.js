@@ -482,12 +482,13 @@ function kidDrawer(kidId, tab){
       return '<div style="margin-bottom:20px">' +
         '<div class="row ' + s.cls + '" style="margin-bottom:10px"><span class="task-emoji">' + s.emoji + '</span>' +
         '<span class="bold" style="color:var(--c)">' + s.name + '</span><span class="grow"></span>' +
-        starPill(ts.reduce(function(a, t){ return a + starsFor(t, kidId); }, 0)) + '</div>' +
+        starPill(ts.reduce(function(a, t){ return isTeamTask(t) ? a : a + starsFor(t, kidId); }, 0)) + '</div>' +
         (ts.length ? ts.map(function(t){
           return '<div class="task ' + k.color + (isTaskDone(kidId, t.id, TODAY) ? ' done' : '') + '" style="margin-bottom:8px">' +
             '<span class="task-emoji">' + t.emoji + '</span>' +
             '<span class="grow task-title" lang="' + (k.lang || 'en') + '">' +
-            esc(itemTitle(t, k.lang || 'en')) + '</span>' + starPill(starsFor(t, kidId)) + '</div>';
+            esc(itemTitle(t, k.lang || 'en')) + '</span>' +
+            (isTeamTask(t) ? teamPill(starsFor(t, kidId)) : starPill(starsFor(t, kidId))) + '</div>';
         }).join('') : '<div class="tiny faint">Nothing yet.</div>') + '</div>';
     }).join('') +
     '<button class="btn btn-block" data-action="manage-tasks">' + icon('edit', 'i-sm') + 'Manage tasks</button>';
@@ -568,7 +569,8 @@ function kidMode(kidId){
           return '<button class="kid-task ' + k.color + (done ? ' done' : '') + '" data-ktask="' + task.id + '">' +
             '<span class="task-emoji">' + task.emoji + '</span>' +
             '<span class="grow kt">' + esc(itemTitle(task, L)) + '</span>' +
-            starPill(starsFor(task, kidId)) + checkCircle() + '</button>';
+            (isTeamTask(task) ? teamPill(starsFor(task, kidId)) : starPill(starsFor(task, kidId))) +
+            checkCircle() + '</button>';
         }).join('') +
         (!tasks.length && !evs.length ? '<div class="ph">' + t('nothingToDo', L) + '</div>' : '') +
         (slotComplete(kidId, dt, state.slot)
@@ -609,7 +611,10 @@ function kidMode(kidId){
       var nowDone = toggleTask(kidId, id, TODAY);
       var def = taskById(id);
       FX.tick(row, nowDone);
-      if (nowDone && def) toast(t('plusStars', L, { n:starsFor(def, kidId) }), 'gold', '⭐');
+      if (nowDone && def) toast(
+        isTeamTask(def) ? t('toastTeam', L, { n:starsFor(def, kidId) })
+                        : t('plusStars', L, { n:starsFor(def, kidId) }),
+        'gold', isTeamTask(def) ? '🤝' : '⭐');
       draw();
       if (nowDone){
         var nowDay = dayProgress(kidId, TODAY);
@@ -627,18 +632,27 @@ function kidMode(kidId){
 }
 
 /* ---------------- rewards ---------------- */
-function rewardEditModal(rewardId){
+function rewardEditModal(rewardId, asTeam){
   var r = rewardId ? rewardById(rewardId) : null;
   var isNew = !r;
-  if (isNew) r = { name:'', emoji:'🍿', cost:100, note:'' };
+  if (isNew) r = { name:'', emoji: asTeam ? '🤝' : '🍿', cost: asTeam ? 500 : 100,
+                   note:'', team: !!asTeam };
 
   var api = openModal({
-    title: isNew ? 'New reward' : 'Edit reward',
-    sub: 'Rewards work best when your child helps choose them',
+    title: isNew ? (asTeam ? 'New family reward' : 'New reward') : 'Edit reward',
+    sub: 'Rewards work best when your children help choose them',
     body:
       '<div class="field"><label>Reward</label>' +
         '<input class="inp" id="rw-name" value="' + esc(r.name) + '" placeholder="Movie night pick"></div>' +
-      '<div class="field"><label>Picture</label>' + emojiPicker(REWARD_EMOJI, r.emoji, 'emoji') + '</div>' +
+      '<div class="field"><label>Who is it for?</label>' +
+        '<div class="row" data-picker="who">' +
+          '<button class="chip' + (r.team ? '' : ' on') + '" data-pick="one">⭐ One child</button>' +
+          '<button class="chip' + (r.team ? ' on' : '') + '" data-pick="team">🤝 The whole family</button>' +
+        '</div>' +
+        '<div class="hint">A child pays from their own stars; a family reward comes out of the team pot ' +
+        'that the chores fill.</div></div>' +
+      '<div class="field"><label>Picture</label>' +
+        '<div class="emojiscroll">' + emojiPickerGrouped(REWARD_EMOJI_GROUPS, r.emoji, 'emoji') + '</div></div>' +
       '<div class="f2">' +
         '<div class="field"><label>Costs (stars)</label>' +
           '<input class="inp" id="rw-cost" type="number" min="1" value="' + r.cost + '"></div>' +
@@ -650,7 +664,7 @@ function rewardEditModal(rewardId){
       '<button class="btn" data-close="1">Cancel</button>' +
       '<button class="btn btn-primary" id="rw-save">' + (isNew ? 'Add reward' : 'Save') + '</button>'
   });
-  wirePickers(api.el, ['emoji']);
+  wirePickers(api.el, ['emoji', 'who']);
   $('#rw-save', api.el).addEventListener('click', function(){
     var name = $('#rw-name', api.el).value.trim();
     if (!name){ toast('Give it a name first', 'warn'); return; }
@@ -658,7 +672,8 @@ function rewardEditModal(rewardId){
       name: name,
       emoji: pickedOne(api.el, 'emoji') || '🍿',
       cost: Math.max(1, +$('#rw-cost', api.el).value || 1),
-      note: $('#rw-note', api.el).value.trim()
+      note: $('#rw-note', api.el).value.trim(),
+      team: pickedOne(api.el, 'who') === 'team'
     };
     if (isNew) addReward(patch); else updateReward(r.id, patch);
     api.close(); render();
@@ -670,27 +685,42 @@ function rewardEditModal(rewardId){
 function redeemModal(rewardId){
   var r = rewardById(rewardId);
   if (!r) return;
-  var eligible = DB.kids.filter(function(k){ return starBank(k.id) >= r.cost; });
-  var chosen = eligible.length ? eligible[0].id : null;
+  var lim = rewardLimit();
+  /* a family reward is paid by the team, so there is nobody to choose */
+  var team = !!r.team;
+  var eligible = team ? [] : DB.kids.filter(function(k){ return canRedeem(k.id, r.id).ok; });
+  var chosen = team ? TEAM_ID : (eligible.length ? eligible[0].id : null);
 
   var api = openModal({
     title: r.emoji + ' ' + esc(r.name),
-    sub: 'Costs ' + r.cost + ' stars' + (r.note ? ' &middot; ' + esc(r.note) : ''),
+    sub: 'Costs ' + r.cost + (team ? ' team stars' : ' stars') + (r.note ? ' &middot; ' + esc(r.note) : ''),
     size: 'narrow',
-    body: '<div class="field mb0"><label>Who is cashing in?</label>' +
+    body: (team
+      ? '<div class="field mb0">' +
+          '<div class="radio on k0"><span class="mark"></span><span style="font-size:26px">🤝</span>' +
+            '<span class="grow"><span class="bold">The whole family</span>' +
+            '<span class="tiny faint" style="display:block">' + teamBank() + ' in the pot' +
+            (lim ? ' &middot; ' + rewardsLeft(TEAM_ID) + ' of ' + lim + ' left this month' : '') +
+            '</span></span>' + teamPill(teamBank()) + '</div>' +
+          '<div class="hint" style="margin-top:10px">Chores fill this pot. Nobody’s own stars are ' +
+          'touched.</div></div>'
+      : '<div class="field mb0"><label>Who is cashing in?</label>' +
       DB.kids.map(function(k){
-        var bank = starBank(k.id), ok = bank >= r.cost;
+        var bank = starBank(k.id), left = rewardsLeft(k.id), can = canRedeem(k.id, r.id);
         return '<button class="radio ' + k.color + (k.id === chosen ? ' on' : '') + '" data-pick2="' + k.id + '"' +
-               (ok ? '' : ' disabled style="opacity:.45"') + '>' +
+               (can.ok ? '' : ' disabled style="opacity:.45"') + '>' +
           '<span class="mark"></span><span style="font-size:26px">' + k.emoji + '</span>' +
           '<span class="grow"><span class="bold">' + esc(k.name) + '</span>' +
           '<span class="tiny faint" style="display:block">' + bank + ' banked' +
-          (ok ? '' : ' - needs ' + (r.cost - bank) + ' more') + '</span></span>' + starPill(bank) + '</button>';
+          (can.why === 'stars' ? ' - needs ' + (r.cost - bank) + ' more'
+           : can.why === 'limit' ? ' - used this month’s ' + lim + ' already'
+           : lim ? ' &middot; ' + left + ' of ' + lim + ' left this month' : '') +
+          '</span></span>' + starPill(bank) + '</button>';
       }).join('') +
       (DB.settings.parentApproves
         ? '<div class="hint" style="margin-top:10px">This will wait for your approval on the Rewards screen.</div>'
         : '<div class="hint" style="margin-top:10px">Approval is off, so this is deducted straight away.</div>') +
-      '</div>',
+      '</div>'),
     foot: '<button class="btn" data-close="1">Cancel</button>' +
           '<button class="btn btn-gold" id="do-redeem"' + (chosen ? '' : ' disabled') + '>⭐ Cash in</button>'
   });
@@ -705,6 +735,13 @@ function redeemModal(rewardId){
     }
     if (e.target.closest('#do-redeem') && chosen){
       var rec = redeem(chosen, r.id);
+      if (!rec){
+        var why = canRedeem(chosen, r.id);
+        toast(why.why === 'limit'
+          ? kname(chosen) + ' has already had ' + rewardLimit() + ' this month'
+          : 'Not enough stars for that yet', 'warn');
+        return;
+      }
       api.close(); render();
       toast(rec.status === 'pending'
         ? kname(chosen) + ' asked for ' + r.name
@@ -719,13 +756,19 @@ function spendModal(kidId){
   openModal({
     title: k.emoji + ' ' + esc(k.name) + '&rsquo;s stars',
     sub: bank + ' banked',
-    body: '<div class="grid-3">' + DB.rewards.map(function(r){
-      var locked = bank < r.cost;
+    body: (rewardLimit()
+      ? '<div class="hint" style="margin-bottom:12px">' + rewardsLeft(kidId) + ' of ' +
+        rewardLimit() + ' rewards left this month. Family outings come out of the team pot instead.</div>'
+      : '') +
+      '<div class="grid-3">' + DB.rewards.filter(function(r){ return !r.team; }).map(function(r){
+      var can = canRedeem(kidId, r.id), locked = !can.ok;
       return '<div class="rewardcard' + (locked ? ' locked' : '') + '">' +
         '<span class="em">' + r.emoji + '</span>' +
         '<div class="bold sm">' + esc(r.name) + '</div>' + starPill(r.cost) +
         '<button class="btn btn-sm btn-block ' + (locked ? '' : 'btn-gold') + '" data-action="redeem:' + r.id + '"' +
-          (locked ? ' disabled' : '') + '>' + (locked ? (r.cost - bank) + ' more' : 'Cash in') + '</button>' +
+          (locked ? ' disabled' : '') + '>' +
+          (can.why === 'stars' ? (r.cost - bank) + ' more' : can.why === 'limit' ? 'None left' : 'Cash in') +
+        '</button>' +
       '</div>';
     }).join('') + '</div>',
     foot: '<button class="btn" data-close="1">Close</button>'

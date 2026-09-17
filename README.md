@@ -23,7 +23,7 @@ Then open <http://127.0.0.1:8777>.
 | Screen | Status | What you can do |
 | --- | --- | --- |
 | **Routine & chores** | ✅ live | Tick tasks, earn stars, switch morning/midday/evening, move between days, add / edit / delete tasks |
-| **Rewards** | ✅ live | Star banks, reward store CRUD, cash in, approve or deny requests |
+| **Rewards** | ✅ live | Star banks, the team pot, personal and family reward CRUD, cash in, approve or deny requests |
 | **Calendar** | ✅ live | Add / edit / delete events, weekly repeats or one-offs, day / week / month, mark done, push to tomorrow, three-way series delete |
 | **Kids** | ✅ live | Add, rename, recolour, remove children; per-child profile and their own login view |
 | **Settings** | ✅ mostly | Star values, school days, approval and carry-over rules, theme, tips, export / import / reset |
@@ -136,29 +136,53 @@ systems meet, and it only flows calendar → routine.
 
 ## The star economy
 
+**Two purses.** A **routine** pays the child who ticks it. A **chore** pays the
+family: every one of its stars goes to the team pot and none to the child's own
+bank. The chore rows on the board wear a teal 🤝 pill instead of a gold ⭐ one, and
+the chore heading says *to the team*, so which purse is being filled is never a
+guess. Flip a task between routine and chore in the task editor and its stars
+change purse with it, past ticks included.
+
 - Each task carries a star value **per child** (`starsByKid`), set with the −/+
   rows in the task editor, so an older child can earn more for the same job. New
   tasks start from the defaults in Settings. Tasks saved before this fall back to
   their single `stars` value.
-- A bank is `opening balance + everything ever ticked − everything cashed in`,
+- A bank is `opening balance + every routine ever ticked − everything cashed in`,
   recomputed from the ticks on every render. It cannot drift out of sync. Changing
   a task's value changes what its past ticks are worth too.
-- The foot of each column shows stars earned **against the most possible** today
-  and this week (Monday to Sunday), counting only the tasks scheduled on each day.
-- **Team stars**, the gold bar at the top of the board: half of everything the
-  children earn together, rounded down, for today, this week and all time. It is a
-  separate tally - nobody's own bank goes down - and opening balances don't count.
-- **Carry over** off means only stars earned since Monday count.
+- The foot of each column shows the child's own stars **against the most possible**
+  today and this week (Monday to Sunday), counting only the routines scheduled on
+  each day.
+- The **team pot**, the gold bar at the top of the board, is `every chore star ever
+  ticked − what the family has cashed in`, with today and this week shown against
+  the most the chores could pay. Opening balances are personal, so they never
+  reach it.
+- **Carry over** off means only stars earned since Monday count, for the pot as
+  well as for each child.
 - **Parent approves** on means cashing in creates a request you approve or deny on
   the Rewards screen; denying refunds the stars.
 
+### Rewards
+
+The store has two shelves. **Personal rewards** are bought with a child's own
+stars. **Family rewards** come out of the team pot - a museum field trip, eating
+out, a STEM day, a service afternoon, a camp-out - and are added from *Team pot →
+Add*, or by switching any reward to *The whole family* in its editor. A reward can
+only be paid for from the purse it belongs to.
+
+**One reward a month, each.** `settings.rewardsPerMonth` (default 1) caps how many
+rewards one child may cash in per calendar month; the team pot has an allowance of
+its own, the same size. The bank cards, the spend drawer and the cash-in dialog all
+show what is left, and 0 means no limit. A denied request does not count against it.
+
 Reward prices were doubled (movie night 120 up to a sleepover at 1000). Saved data
 is upgraded once on load, flagged with `settings.rewardCostsDoubled`, so prices
-never double twice - including rewards you added yourself.
+never double twice. The family rewards are added to saved data the same way, behind
+`settings.teamRewardsAdded`, and skip any name you already use.
 
-Worked example: Reading Time worth 10 for Hannah, 4 for Juan and 3 for Ian. All
-three tick it and the banks move by 10, 4 and 3, while team stars go up by 8
-(half of 17).
+Worked example: Reading Time is a routine worth 10 for Hannah, 4 for Juan and 3 for
+Ian, so ticking it moves three banks. Set the table is a chore worth 5 - whoever
+ticks it, the pot gains 5 and no bank moves at all.
 
 ## Kid-friendly touches on the routine board
 
@@ -173,12 +197,13 @@ huge rows, with their star total, and an animal picture instead of a password.
 
 ## Things worth tapping
 
-- **Routine** → tap any row and watch the team bar and the column foot move.
+- **Routine** → tap a routine, then a chore, and watch which total moves.
 - **Routine** → **Manage** → edit a task and give each child a different star value.
 - **Routine** → the dashed cards are today's calendar lessons.
 - **Calendar** → **+ Event**, set it to repeat weekly, then find it on the board.
 - **Kids** → **Add a child**, then **Manage** on the routine board to give them jobs.
 - **Rewards** → cash in, then approve or deny it.
+- **Rewards** → **Team pot** → spend the chore stars on a day out together.
 - **Settings** → change the default star values that new tasks start from.
 
 ## Files
@@ -207,7 +232,8 @@ assets/app.js         shell, hash router, delegated action handler
 - All reads and writes go through `store.js`; nothing else touches `localStorage`.
   `saveDB()` runs on every mutation, so there is no save button to forget.
 - Star totals are always derived, never stored — see `starsFor`, `starsOn`,
-  `maxStarsOn`, `starsInWeek`, `teamStars`, `starBank`.
+  `maxStarsOn`, `starsInWeek`, `teamStars`, `teamBank`, `starBank`. Chores are told
+  apart by `isTeamTask`, and the team spends under the id `TEAM_ID` ('team').
 - Child and subject colours are CSS custom properties (`--c`, `--cs`, `--cb`) set by
   one class, so recolouring a child is a one-line change.
 - Recurring events use `days:[0-6]` (0 = Monday); one-offs use `date:'YYYY-MM-DD'`.

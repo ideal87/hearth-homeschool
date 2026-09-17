@@ -126,7 +126,24 @@ var TASK_EMOJI = (function(){
   });
   return out;
 })();
-var REWARD_EMOJI = ['🍿','🌙','🍕','🛝','🍦','📚','🧸','⛺','🎬','🎮','🚲','🏊'];
+var REWARD_EMOJI_GROUPS = [
+  { name:'Treats & food',     list:['🍦','🍪','🍩','🧁','🍫','🍭','🥤','🧃','🍕','🍔','🌮','🥞','🍿','🍰'] },
+  { name:'Days out',          list:['🛝','🎢','🎡','🎳','🏛️','🦁','🐬','🎪','🏖️','⛰️','🥾','⛺','🎣','🚂'] },
+  { name:'Screen & games',    list:['🎬','🎮','📺','🕹️','🎧','🎲','🧩','♟️'] },
+  { name:'Books & STEM',      list:['📚','📖','✏️','🔬','🔭','🧪','🧲','🤖','💻','🧮','🗺️','🦕'] },
+  { name:'Faith & giving',    list:['🙏','✝️','⛪','🕊️','❤️','🤝','🎁','💌','🧺'] },
+  { name:'Time & privileges', list:['🌙','⏰','😴','🛌','🚪','👑','🎟️','📱'] },
+  { name:'Making & doing',    list:['🎨','🖍️','✂️','🧶','🪡','🍳','🎭','📷','🪴','🔨'] },
+  { name:'Music & sport',     list:['🎵','🎸','🥁','🎹','⚽','🏀','🏊','🚲','🛹','🎯'] },
+  { name:'Toys & things',     list:['🧸','🪀','🎈','🚗','🪁','🧱','🐣','👟'] }
+];
+var REWARD_EMOJI = (function(){
+  var out = [];
+  REWARD_EMOJI_GROUPS.forEach(function(g){
+    g.list.forEach(function(e){ if (out.indexOf(e) === -1) out.push(e); });
+  });
+  return out;
+})();
 var GRADES = ['Pre-K','Kindergarten','Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6'];
 
 /* ---------------- runtime (not persisted) ---------------- */

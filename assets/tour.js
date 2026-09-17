@@ -105,8 +105,8 @@ var Tour = {
 /* ------------------------------------------------------------------ */
 var TOURS = {
   routine: [
-    { sel:'.teambar', emoji:'🤝', title:'Team stars',
-      body:'Half of every star the children earn also goes into a shared team tally - so helping a brother or sister finish matters too. Nobody&rsquo;s own bank goes down.' },
+    { sel:'.teambar', emoji:'🤝', title:'The team pot',
+      body:'Chores pay the family rather than the child: every star from a chore lands here, and the pot buys the outings and treats you all share. Routines still pay the child who ticks them.' },
     { sel:'.board', emoji:'📋', title:'One column per child',
       body:'The whole family on one screen, colour-coded. On a tablet you swipe sideways; on a big screen they sit side by side. Every tick is saved straight away, and syncs to your other devices when signed in.' },
     { sel:'.ringwrap', emoji:'🎯', title:'How far through the day',
@@ -118,13 +118,15 @@ var TOURS = {
     { sel:'.task', emoji:'👆', title:'The whole row is the button',
       body:'No tiny checkbox to aim at. Tap anywhere and it ticks, turns the child&rsquo;s colour, and pays out its stars.' },
     { sel:'.kidcol-foot', emoji:'⭐', title:'How close to the most',
-      body:'The foot of each column shows stars earned against the most possible today, and the same for the whole week.' },
+      body:'The foot of each column shows the child&rsquo;s own stars - from routines - against the most possible today, and the same for the whole week. Chore stars are counted in the team pot above.' },
     { sel:'[data-action="manage-tasks"]', emoji:'✏️', title:'Add your own',
       body:'<b>Manage</b> opens the full list: add, edit or delete routines and chores, set who does them, which days, and what they are worth.' }
   ],
   rewards: [
     { sel:'.bankcard', emoji:'🏦', title:'The star bank',
-      body:'Worked out live from the ticks on the routine board minus anything cashed in, so the two can never drift apart.' },
+      body:'Worked out live from the routines ticked on the board minus anything cashed in, so the two can never drift apart. Each child may cash in a set number of rewards a month - one by default, changed in Settings.' },
+    { sel:'.card .card-title', emoji:'🤝', title:'The team pot',
+      body:'Chore stars land here instead of in a child&rsquo;s bank. The pot pays for field trips, eating out, a STEM day - things the whole family does together, added and priced like any other reward.' },
     { sel:'.rewardcard', emoji:'🏪', title:'A store you set together',
       body:'Add, rename, reprice or delete rewards. They work best as experiences - a film pick, a later bedtime - chosen with your child.' },
     { sel:'.card .card-title', emoji:'✋', title:'Approve before stars leave',

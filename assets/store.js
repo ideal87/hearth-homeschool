@@ -278,7 +278,17 @@ function seedDB(){
       { id:'w5', name:'Ice cream trip', emoji:'🍦', cost:300, note:'Two scoops' },
       { id:'w6', name:'A new book', emoji:'📚', cost:400, note:'Bookshop, you pick' },
       { id:'w7', name:'Toy shop visit', emoji:'🧸', cost:800, note:'Up to $10' },
-      { id:'w8', name:'Friend sleepover', emoji:'⛺', cost:1000, note:'Invite one friend' }
+      { id:'w8', name:'Friend sleepover', emoji:'🎪', cost:1000, note:'Invite one friend' },
+      /* team rewards - the whole family goes, paid out of the team pot */
+      { id:'g1', name:'Serve together day', emoji:'🤝', cost:300,  note:'Food bank, church or a neighbour', team:true },
+      { id:'g2', name:'Nature hike & picnic', emoji:'🥾', cost:400,  note:'Pack lunch, pick a trail', team:true },
+      { id:'g3', name:'Pizza & film night', emoji:'🍕', cost:500,  note:'Everyone votes on the film', team:true },
+      { id:'g4', name:'STEM activity', emoji:'🔬', cost:600,  note:'A science kit or experiment day', team:true },
+      { id:'g5', name:'Bowling afternoon', emoji:'🎳', cost:700,  note:'Two games each', team:true },
+      { id:'g6', name:'Eating out', emoji:'🍔', cost:800,  note:'Family dinner, you choose where', team:true },
+      { id:'g7', name:'Maker workshop', emoji:'🎨', cost:900,  note:'Art, pottery or building day', team:true },
+      { id:'g8', name:'Museum field trip', emoji:'🏛️', cost:1200, note:'Science centre, zoo or aquarium', team:true },
+      { id:'g9', name:'Family camp-out', emoji:'⛺', cost:1500, note:'A night under canvas', team:true }
     ],
     redemptions: [],
     completions: {},
@@ -301,7 +311,9 @@ function seedDB(){
       tipsOff:['t-routine', 't-kids'],
       seenWelcome:true,
       railHidden:false,
-      rewardCostsDoubled:true
+      rewardCostsDoubled:true,
+      rewardsPerMonth:1,
+      teamRewardsAdded:true
     }
   };
 }
@@ -319,6 +331,18 @@ function normaliseDB(db){
   if (!Object.prototype.hasOwnProperty.call(db.settings, 'rewardCostsDoubled')){
     (db.rewards || []).forEach(function(r){ r.cost = (+r.cost || 0) * 2; });
     db.settings.rewardCostsDoubled = true;
+  }
+  /* One-time: rewards the whole family shares arrived in September 2026.
+     Added by name, so a family that already invented their own "Eating out"
+     keeps theirs. The flag syncs, so no device adds them twice. */
+  if (!db.settings.teamRewardsAdded){
+    db.rewards = db.rewards || [];
+    var had = {};
+    db.rewards.forEach(function(r){ had[String(r.name || '').toLowerCase()] = true; });
+    fresh.rewards.forEach(function(r){
+      if (r.team && !had[r.name.toLowerCase()]) db.rewards.push(r);
+    });
+    db.settings.teamRewardsAdded = true;
   }
   for (var k in fresh.settings)
     if (!Object.prototype.hasOwnProperty.call(db.settings, k)) db.settings[k] = fresh.settings[k];
@@ -387,7 +411,10 @@ function kid(id){
   for (var i = 0; i < DB.kids.length; i++) if (DB.kids[i].id === id) return DB.kids[i];
   return null;
 }
-function kname(id){ var k = kid(id); return k ? k.name : 'Someone'; }
+function kname(id){
+  if (id === TEAM_ID) return 'The team';
+  var k = kid(id); return k ? k.name : 'Someone';
+}
 function kidIds(){ return DB.kids.map(function(k){ return k.id; }); }
 
 function addKid(o){
@@ -531,17 +558,37 @@ function starsFor(task, kidId){
   return +task.stars || 0;
 }
 
-/* stars a child earned on one date: the value of each task they ticked */
+/* Who a task pays. Routines pay the child who ticks them; chores pay the
+   family pot instead, in full - a chore is never worth anything to one
+   child's own bank. */
+function isTeamTask(task){ return !!task && task.kind === 'chore'; }
+
+/* stars a child earned on one date: the routines they ticked */
 function starsOn(kidId, dateObj){
   var total = 0;
   tasksFor(kidId, dateObj).forEach(function(t){
+    if (isTeamTask(t)) return;
     if (isTaskDone(kidId, t.id, dateObj)) total += starsFor(t, kidId);
   });
   return total;
 }
-/* the most a child could earn on a date if they did everything */
+/* the most a child could earn on a date if they did every routine */
 function maxStarsOn(kidId, dateObj){
-  return tasksFor(kidId, dateObj).reduce(function(a, t){ return a + starsFor(t, kidId); }, 0);
+  return tasksFor(kidId, dateObj).reduce(function(a, t){
+    return isTeamTask(t) ? a : a + starsFor(t, kidId); }, 0);
+}
+/* what one child's chores put into the team pot on a date */
+function teamStarsFrom(kidId, dateObj){
+  var total = 0;
+  tasksFor(kidId, dateObj).forEach(function(t){
+    if (!isTeamTask(t)) return;
+    if (isTaskDone(kidId, t.id, dateObj)) total += starsFor(t, kidId);
+  });
+  return total;
+}
+function maxTeamStarsFrom(kidId, dateObj){
+  return tasksFor(kidId, dateObj).reduce(function(a, t){
+    return isTeamTask(t) ? a + starsFor(t, kidId) : a; }, 0);
 }
 /* Monday to Sunday around a date */
 function weekDays(dateObj){
@@ -555,17 +602,46 @@ function starsInWeek(kidId, dateObj){
 function maxStarsInWeek(kidId, dateObj){
   return weekDays(dateObj).reduce(function(a, d){ return a + maxStarsOn(kidId, d); }, 0);
 }
-/* Team stars: the family collects half of what the children earn together.
-   It is a separate tally - nobody's own bank goes down - and it counts only
-   stars earned by ticking, not opening balances. Rounded down. */
-function teamStars(dateObj){
-  var today = 0, week = 0, total = 0;
+
+/* ---- the team pot: every star from every chore, whoever did it ---- */
+var TEAM_ID = 'team';
+function teamStarsOn(dateObj){
+  return DB.kids.reduce(function(a, k){ return a + teamStarsFrom(k.id, dateObj); }, 0);
+}
+function maxTeamStarsOn(dateObj){
+  return DB.kids.reduce(function(a, k){ return a + maxTeamStarsFrom(k.id, dateObj); }, 0);
+}
+function teamStarsInWeek(dateObj){
+  return weekDays(dateObj).reduce(function(a, d){ return a + teamStarsOn(d); }, 0);
+}
+function maxTeamStarsInWeek(dateObj){
+  return weekDays(dateObj).reduce(function(a, d){ return a + maxTeamStarsOn(d); }, 0);
+}
+/* every chore star ever ticked, honouring the carry-over setting like a bank */
+function teamEarnedTotal(){
+  var weekStart = startOfWeek(TODAY), total = 0;
   DB.kids.forEach(function(k){
-    today += starsOn(k.id, dateObj);
-    week  += starsInWeek(k.id, dateObj);
-    total += starsEarnedTotal(k.id);
+    earnedDates(k.id).forEach(function(key){
+      var dt = parseYmd(key);
+      if (!DB.settings.carryOver && dt < weekStart) return;
+      total += teamStarsFrom(k.id, dt);
+    });
   });
-  return { today: Math.floor(today / 2), week: Math.floor(week / 2), total: Math.floor(total / 2) };
+  return total;
+}
+function teamSpent(){
+  return DB.redemptions
+    .filter(function(r){ return r.kid === TEAM_ID && r.status !== 'denied'; })
+    .reduce(function(a, r){ return a + r.cost; }, 0);
+}
+function teamBank(){ return teamEarnedTotal() - teamSpent(); }
+function teamStars(dateObj){
+  return {
+    today: teamStarsOn(dateObj),
+    week:  teamStarsInWeek(dateObj),
+    total: teamEarnedTotal(),
+    bank:  teamBank()
+  };
 }
 function slotTasks(kidId, dateObj, slot){ return tasksFor(kidId, dateObj, slot); }
 function slotComplete(kidId, dateObj, slot){
@@ -621,10 +697,39 @@ function starBank(kidId){
   return opening + starsEarnedTotal(kidId) - starsSpent(kidId);
 }
 
+/* A bank belongs to a child, or to the team - the team spends chore stars. */
+function bankFor(who){ return who === TEAM_ID ? teamBank() : starBank(who); }
+
+/* How many rewards one child (or the team) may still cash in this month.
+   0 in Settings means no limit at all. */
+function rewardLimit(){
+  var n = DB.settings.rewardsPerMonth;
+  return n == null ? 1 : Math.max(0, +n || 0);
+}
+function redemptionsInMonth(who, monthKey){
+  return DB.redemptions.filter(function(r){
+    if (r.kid !== who || r.status === 'denied') return false;
+    return String(r.onYmd || (r.at || '').slice(0, 10)).slice(0, 7) === monthKey;
+  });
+}
+function rewardsLeft(who, dateObj){
+  var lim = rewardLimit();
+  if (!lim) return Infinity;
+  return Math.max(0, lim - redemptionsInMonth(who, ymd(dateObj || TODAY).slice(0, 7)).length);
+}
+/* every reason a Cash in button might not work, so the UI can say which */
+function canRedeem(who, rewardId){
+  var r = rewardById(rewardId);
+  if (!r) return { ok:false, why:'gone' };
+  if (!!r.team !== (who === TEAM_ID)) return { ok:false, why:'wrong-purse' };
+  if (bankFor(who) < r.cost) return { ok:false, why:'stars', short: r.cost - bankFor(who) };
+  if (!rewardsLeft(who)) return { ok:false, why:'limit', limit: rewardLimit() };
+  return { ok:true };
+}
+
 function redeem(kidId, rewardId){
   var r = rewardById(rewardId);
-  if (!r) return null;
-  if (starBank(kidId) < r.cost) return null;   /* never let a bank go negative */
+  if (!r || !canRedeem(kidId, rewardId).ok) return null;
   var rec = {
     id: uid('r'), kid:kidId, rewardId:r.id, name:r.name, emoji:r.emoji, cost:r.cost,
     at: new Date().toISOString(),

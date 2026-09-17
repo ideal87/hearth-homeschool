@@ -13,6 +13,7 @@
   --warn:#96660c; --warn-soft:#fdf0d9;
   --bad:#b8433f; --bad-soft:#fceaea;
   --gold:#c98a10; --gold-soft:#fdf2d8; --gold-ink:#8a5d05;
+  --team-ink:#0f766e; --team-soft:#d6f7f0;
 
   /* per-child palettes */
   --k1:#0f8f8a; --k1s:#dff3f1; --k1b:#a9ddd8;   /* teal   */
@@ -56,6 +57,7 @@
     --warn:#e0ad5b; --warn-soft:#2a2214;
     --bad:#eb8d89; --bad-soft:#2c1919;
     --gold:#e8bc55; --gold-soft:#2b2313; --gold-ink:#f0cd78;
+    --team-ink:#5eead4; --team-soft:#123330;
     --k1:#5cc7c0; --k1s:#132b2b; --k1b:#2b5a58;
     --k2:#ec8f8a; --k2s:#2e1c1c; --k2b:#5e3634;
     --k3:#b195ee; --k3s:#241d38; --k3b:#453a68;
@@ -88,6 +90,7 @@
   --warn:#e0ad5b; --warn-soft:#2a2214;
   --bad:#eb8d89; --bad-soft:#2c1919;
   --gold:#e8bc55; --gold-soft:#2b2313; --gold-ink:#f0cd78;
+  --team-ink:#5eead4; --team-soft:#123330;
   --k1:#5cc7c0; --k1s:#132b2b; --k1b:#2b5a58;
   --k2:#ec8f8a; --k2s:#2e1c1c; --k2b:#5e3634;
   --k3:#b195ee; --k3s:#241d38; --k3b:#453a68;
@@ -269,6 +272,8 @@ body.rail-hidden .app{grid-template-columns:minmax(0,1fr)}
 .star{display:inline-flex;align-items:center;gap:5px;font-weight:750;color:var(--gold-ink);
   background:var(--gold-soft);border-radius:999px;padding:4px 11px;font-size:13.5px}
 .star.big{font-size:17px;padding:7px 15px}
+/* a chore pays the family, so its pill is teal rather than gold */
+.star.team{color:var(--team-ink);background:var(--team-soft)}
 
 /* ---------- avatars ---------- */
 .face{
@@ -353,6 +358,10 @@ body.rail-hidden .app{grid-template-columns:minmax(0,1fr)}
   text-transform:uppercase;color:var(--c);opacity:.85;display:flex;align-items:center;gap:9px;
 }
 .slotlabel .ct{margin-left:auto;opacity:.8;letter-spacing:0;text-transform:none;font-size:12px}
+.slotlabel .teamtag{
+  margin-left:8px;font-size:10.5px;font-weight:800;letter-spacing:.02em;text-transform:none;
+  color:var(--team-ink);background:var(--team-soft);border-radius:999px;padding:2px 8px;
+}
 .tasklist{padding:0 14px 14px;display:flex;flex-direction:column;gap:10px}
 
 .task{
@@ -479,6 +488,12 @@ body.rail-hidden .app{grid-template-columns:minmax(0,1fr)}
 
 /* ---------- team stars ---------- */
 .teambar{
+  display:block;
+  background:linear-gradient(120deg,var(--gold-soft),var(--panel) 70%);
+  border:2px solid var(--gold);border-radius:24px;padding:10px 16px;margin-bottom:14px;
+  box-shadow:0 2px 0 var(--gold);
+}
+.teambar-row{
   display:flex;align-items:center;gap:14px;flex-wrap:wrap;
   background:linear-gradient(120deg,var(--gold-soft),var(--panel) 70%);
   border:2px solid var(--gold);border-radius:24px;padding:10px 16px;margin-bottom:14px;
@@ -498,7 +513,8 @@ body.rail-hidden .app{grid-template-columns:minmax(0,1fr)}
 }
 .teamstat b{font-size:19px;font-weight:850;color:var(--gold-ink);line-height:1.2}
 .teamstat small{font-size:11px;font-weight:700;color:var(--ink-3)}
-@media (max-width:520px){ .teamfaces{display:none} .teambar{gap:10px} }
+.teamdue{display:flex;flex-direction:column;gap:8px;margin:12px 0 4px}
+@media (max-width:520px){ .teamfaces{display:none} .teambar-row{gap:10px} }
 
 /* per-child star values in the task editor */
 .kidstars{display:flex;flex-direction:column;gap:8px}

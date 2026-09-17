@@ -271,14 +271,14 @@ function seedDB(){
       }
     ],
     rewards: [
-      { id:'w1', name:'Movie night pick', emoji:'🍿', cost:60, note:'You choose the film' },
-      { id:'w2', name:'Stay up 30 min', emoji:'🌙', cost:80, note:'One weekend night' },
-      { id:'w3', name:'Pick dinner', emoji:'🍕', cost:100, note:'Anything we can cook' },
-      { id:'w4', name:'Park afternoon', emoji:'🛝', cost:120, note:'Two hours, your choice' },
-      { id:'w5', name:'Ice cream trip', emoji:'🍦', cost:150, note:'Two scoops' },
-      { id:'w6', name:'A new book', emoji:'📚', cost:200, note:'Bookshop, you pick' },
-      { id:'w7', name:'Toy shop visit', emoji:'🧸', cost:400, note:'Up to $10' },
-      { id:'w8', name:'Friend sleepover', emoji:'⛺', cost:500, note:'Invite one friend' }
+      { id:'w1', name:'Movie night pick', emoji:'🍿', cost:120, note:'You choose the film' },
+      { id:'w2', name:'Stay up 30 min', emoji:'🌙', cost:160, note:'One weekend night' },
+      { id:'w3', name:'Pick dinner', emoji:'🍕', cost:200, note:'Anything we can cook' },
+      { id:'w4', name:'Park afternoon', emoji:'🛝', cost:240, note:'Two hours, your choice' },
+      { id:'w5', name:'Ice cream trip', emoji:'🍦', cost:300, note:'Two scoops' },
+      { id:'w6', name:'A new book', emoji:'📚', cost:400, note:'Bookshop, you pick' },
+      { id:'w7', name:'Toy shop visit', emoji:'🧸', cost:800, note:'Up to $10' },
+      { id:'w8', name:'Friend sleepover', emoji:'⛺', cost:1000, note:'Invite one friend' }
     ],
     redemptions: [],
     completions: {},
@@ -300,7 +300,8 @@ function seedDB(){
       showTips:true,
       tipsOff:['t-routine', 't-kids'],
       seenWelcome:true,
-      railHidden:false
+      railHidden:false,
+      rewardCostsDoubled:true
     }
   };
 }
@@ -311,6 +312,14 @@ function seedDB(){
 function normaliseDB(db){
   var fresh = seedDB();
   db.settings = db.settings || {};
+  /* One-time: reward prices were doubled in September 2026. This runs before
+     defaults are filled in, so data saved before then - on any device, or
+     already in the cloud - is doubled exactly once, and the flag syncs so no
+     other device doubles it again. */
+  if (!Object.prototype.hasOwnProperty.call(db.settings, 'rewardCostsDoubled')){
+    (db.rewards || []).forEach(function(r){ r.cost = (+r.cost || 0) * 2; });
+    db.settings.rewardCostsDoubled = true;
+  }
   for (var k in fresh.settings)
     if (!Object.prototype.hasOwnProperty.call(db.settings, k)) db.settings[k] = fresh.settings[k];
   ['kids', 'tasks', 'events', 'rewards', 'redemptions'].forEach(function(s){ db[s] = db[s] || []; });
@@ -513,13 +522,50 @@ function removeReward(id){
 
 var SLOT_IDS = ['morning', 'midday', 'evening'];
 
+/* what one task is worth to one child - children can earn different
+   amounts for the same job, falling back to the task's own value */
+function starsFor(task, kidId){
+  if (!task) return 0;
+  var m = task.starsByKid;
+  if (m && m[kidId] != null && m[kidId] !== '') return +m[kidId] || 0;
+  return +task.stars || 0;
+}
+
 /* stars a child earned on one date: the value of each task they ticked */
 function starsOn(kidId, dateObj){
   var total = 0;
   tasksFor(kidId, dateObj).forEach(function(t){
-    if (isTaskDone(kidId, t.id, dateObj)) total += (+t.stars || 0);
+    if (isTaskDone(kidId, t.id, dateObj)) total += starsFor(t, kidId);
   });
   return total;
+}
+/* the most a child could earn on a date if they did everything */
+function maxStarsOn(kidId, dateObj){
+  return tasksFor(kidId, dateObj).reduce(function(a, t){ return a + starsFor(t, kidId); }, 0);
+}
+/* Monday to Sunday around a date */
+function weekDays(dateObj){
+  var ws = startOfWeek(dateObj), out = [];
+  for (var i = 0; i < 7; i++) out.push(addDays(ws, i));
+  return out;
+}
+function starsInWeek(kidId, dateObj){
+  return weekDays(dateObj).reduce(function(a, d){ return a + starsOn(kidId, d); }, 0);
+}
+function maxStarsInWeek(kidId, dateObj){
+  return weekDays(dateObj).reduce(function(a, d){ return a + maxStarsOn(kidId, d); }, 0);
+}
+/* Team stars: the family collects half of what the children earn together.
+   It is a separate tally - nobody's own bank goes down - and it counts only
+   stars earned by ticking, not opening balances. Rounded down. */
+function teamStars(dateObj){
+  var today = 0, week = 0, total = 0;
+  DB.kids.forEach(function(k){
+    today += starsOn(k.id, dateObj);
+    week  += starsInWeek(k.id, dateObj);
+    total += starsEarnedTotal(k.id);
+  });
+  return { today: Math.floor(today / 2), week: Math.floor(week / 2), total: Math.floor(total / 2) };
 }
 function slotTasks(kidId, dateObj, slot){ return tasksFor(kidId, dateObj, slot); }
 function slotComplete(kidId, dateObj, slot){

@@ -45,6 +45,13 @@ var STRINGS = {
     tipTitle:'The board the whole family runs on',
     tipBody:'One column per child, colour-coded. Tap <b>☀️ 🌤️ 🌙</b> to move through the day. The dashed cards are lessons scheduled on the calendar for that child today - tap anything to tick it. Every tick is saved straight away.',
     rewardSection:'Reward',
+    teamStars:'Team stars',
+    teamHint:'Half of everyone’s stars, collected together',
+    statToday:'today',
+    statWeek:'this week',
+    statTotal:'total',
+    ofMaxToday:'⭐ {n} / {m} today',
+    weekOfMax:'📅 {n} / {m} this week',
     language:'Language'
   },
   ko: {
@@ -74,6 +81,13 @@ var STRINGS = {
     tipTitle:'온 가족이 함께 쓰는 보드',
     tipBody:'아이마다 색깔이 다른 칸이 하나씩 있어요. <b>☀️ 🌤️ 🌙</b> 를 눌러 하루를 이동하세요. 점선 카드는 오늘 그 아이의 달력에 있는 수업이에요. 아무 곳이나 누르면 완료 표시가 되고, 모든 기록은 바로 저장돼요.',
     rewardSection:'보상',
+    teamStars:'팀 별',
+    teamHint:'모두가 모은 별의 절반이 팀에 모여요',
+    statToday:'오늘',
+    statWeek:'이번 주',
+    statTotal:'전체',
+    ofMaxToday:'⭐ 오늘 {n} / {m}',
+    weekOfMax:'📅 이번 주 {n} / {m}',
     language:'언어'
   },
   es: {
@@ -103,6 +117,13 @@ var STRINGS = {
     tipTitle:'El tablero de toda la familia',
     tipBody:'Una columna por niño, con su color. Toca <b>☀️ 🌤️ 🌙</b> para moverte por el día. Las tarjetas con borde discontinuo son las clases del calendario de ese niño para hoy. Todo se guarda al instante.',
     rewardSection:'Premio',
+    teamStars:'Estrellas del equipo',
+    teamHint:'La mitad de las estrellas de todos, juntas',
+    statToday:'hoy',
+    statWeek:'esta semana',
+    statTotal:'en total',
+    ofMaxToday:'⭐ {n} / {m} hoy',
+    weekOfMax:'📅 {n} / {m} esta semana',
     language:'Idioma'
   },
   fr: {
@@ -132,6 +153,13 @@ var STRINGS = {
     tipTitle:'Le tableau de toute la famille',
     tipBody:'Une colonne par enfant, avec sa couleur. Touche <b>☀️ 🌤️ 🌙</b> pour parcourir la journée. Les cartes en pointillés sont les cours du calendrier de cet enfant aujourd’hui. Tout est enregistré aussitôt.',
     rewardSection:'Récompense',
+    teamStars:'Étoiles d’équipe',
+    teamHint:'La moitié des étoiles de chacun, réunies',
+    statToday:'aujourd’hui',
+    statWeek:'cette semaine',
+    statTotal:'au total',
+    ofMaxToday:'⭐ {n} / {m} aujourd’hui',
+    weekOfMax:'📅 {n} / {m} cette semaine',
     language:'Langue'
   }
 };

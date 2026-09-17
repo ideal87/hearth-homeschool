@@ -126,8 +126,8 @@ function handleAction(action){
     case 'theme': setSetting('theme', arg); applyTheme(arg); render(); return;
 
     case 'tour': {
-      var t = TOURS[state.view];
-      if (t) Tour.start(t); else toast('No tour for this screen yet');
+      var steps = TOURS[state.view];
+      if (steps) Tour.start(steps); else toast('No tour for this screen yet');
       return;
     }
     case 'tour-start': closeTopModal(); go('routine'); setTimeout(function(){ Tour.start(TOURS.routine); }, 150); return;
@@ -152,7 +152,7 @@ function handleAction(action){
       FX.tick($('[data-action="task:' + kidId + ':' + taskId + '"]'), nowDone);
       render();
       if (nowDone && def){
-        toast(t('toastStars', L, { name:kname(kidId), n:def.stars }), 'gold', '⭐');
+        toast(t('toastStars', L, { name:kname(kidId), n:starsFor(def, kidId) }), 'gold', '⭐');
         var nowDay = dayProgress(kidId, dt);
         if (nowDay.total > 0 && nowDay.done === nowDay.total && wasDay.done !== wasDay.total){
           setTimeout(function(){

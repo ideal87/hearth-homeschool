@@ -66,9 +66,9 @@ still gives you a JSON snapshot.
 ## Per-child language on the routine board
 
 Each child carries a `lang`. **Their column renders entirely in it** - slot names,
-section headings, bonus and celebration text, the day counter, and the toasts fired
-when they tick something. A mixed family works: Eli's column can be English while
-Maya's is Korean, side by side.
+section headings, celebration text, the star and day counters, and the toasts fired
+when they tick something. A mixed family works: Hannah's column can be English while
+Ian's is Korean, side by side.
 
 Filter the family bar to a single child and the **whole routine page** follows them -
 toolbar, buttons and the date, which is formatted with `toLocaleDateString` in their
@@ -136,17 +136,29 @@ systems meet, and it only flows calendar → routine.
 
 ## The star economy
 
-- Each task carries its own star value; defaults for new ones are in Settings.
-- Clearing a whole slot pays a **bonus** (default 10) on top.
+- Each task carries a star value **per child** (`starsByKid`), set with the −/+
+  rows in the task editor, so an older child can earn more for the same job. New
+  tasks start from the defaults in Settings. Tasks saved before this fall back to
+  their single `stars` value.
 - A bank is `opening balance + everything ever ticked − everything cashed in`,
-  recomputed from the ticks on every render. It cannot drift out of sync.
+  recomputed from the ticks on every render. It cannot drift out of sync. Changing
+  a task's value changes what its past ticks are worth too.
+- The foot of each column shows stars earned **against the most possible** today
+  and this week (Monday to Sunday), counting only the tasks scheduled on each day.
+- **Team stars**, the gold bar at the top of the board: half of everything the
+  children earn together, rounded down, for today, this week and all time. It is a
+  separate tally - nobody's own bank goes down - and opening balances don't count.
 - **Carry over** off means only stars earned since Monday count.
 - **Parent approves** on means cashing in creates a request you approve or deny on
   the Rewards screen; denying refunds the stars.
 
-Worked example, live in the app: ticking Eli's six morning tasks pays 40 star-values
-plus the 10-star slot bonus, moving his bank 245 → 295. Turn the slot bonus up to 30
-in Settings and the same day is instantly worth 70.
+Reward prices were doubled (movie night 120 up to a sleepover at 1000). Saved data
+is upgraded once on load, flagged with `settings.rewardCostsDoubled`, so prices
+never double twice - including rewards you added yourself.
+
+Worked example: Reading Time worth 10 for Hannah, 4 for Juan and 3 for Ian. All
+three tick it and the banks move by 10, 4 and 3, while team stars go up by 8
+(half of 17).
 
 ## Kid-friendly touches on the routine board
 
@@ -161,12 +173,13 @@ huge rows, with their star total, and an animal picture instead of a password.
 
 ## Things worth tapping
 
-- **Routine** → tap any row; finish a slot for the bonus; **Manage** to add a task.
+- **Routine** → tap any row and watch the team bar and the column foot move.
+- **Routine** → **Manage** → edit a task and give each child a different star value.
 - **Routine** → the dashed cards are today's calendar lessons.
 - **Calendar** → **+ Event**, set it to repeat weekly, then find it on the board.
 - **Kids** → **Add a child**, then **Manage** on the routine board to give them jobs.
 - **Rewards** → cash in, then approve or deny it.
-- **Settings** → change the slot bonus and watch every total move.
+- **Settings** → change the default star values that new tasks start from.
 
 ## Files
 
@@ -193,7 +206,8 @@ assets/app.js         shell, hash router, delegated action handler
   switch in `app.js`. Adding a button means adding a `case`.
 - All reads and writes go through `store.js`; nothing else touches `localStorage`.
   `saveDB()` runs on every mutation, so there is no save button to forget.
-- Star totals are always derived, never stored — see `starsOn`, `starBank`.
+- Star totals are always derived, never stored — see `starsFor`, `starsOn`,
+  `maxStarsOn`, `starsInWeek`, `teamStars`, `starBank`.
 - Child and subject colours are CSS custom properties (`--c`, `--cs`, `--cb`) set by
   one class, so recolouring a child is a one-line change.
 - Recurring events use `days:[0-6]` (0 = Monday); one-offs use `date:'YYYY-MM-DD'`.

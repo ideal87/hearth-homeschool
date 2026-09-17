@@ -66,7 +66,7 @@ function taskRow(k, task, dt, L){
     '" data-action="task:' + k.id + ':' + task.id + '">' +
     '<span class="task-emoji">' + task.emoji + '</span>' +
     '<span class="grow"><span class="task-title">' + esc(itemTitle(task, L)) + '</span></span>' +
-    starPill(task.stars) + checkCircle() +
+    starPill(starsFor(task, k.id)) + checkCircle() +
   '</button>';
 }
 function eventRow(k, ev, L){
@@ -169,9 +169,30 @@ function kidColumn(k, dt){
       : '') +
 
     '<div class="kidcol-foot">' +
-      '<span>' + t('starsEarnedToday', L, { n:starsOn(k.id, dt) }) + '</span>' +
+      '<span>' + t('ofMaxToday', L, { n:starsOn(k.id, dt), m:maxStarsOn(k.id, dt) }) + '</span>' +
       '<span>' + t('doneCount', L, { d:day.done, t:day.total }) + '</span>' +
+      '<span class="foot-week">' + t('weekOfMax', L, { n:starsInWeek(k.id, dt), m:maxStarsInWeek(k.id, dt) }) + '</span>' +
     '</div>' +
+  '</section>';
+}
+
+/* the family's shared tally, above the board */
+function teamBar(dt, L){
+  if (!DB.kids.length) return '';
+  var ts = teamStars(dt);
+  function stat(n, label){
+    return '<div class="teamstat"><b>' + n + '</b><small>' + label + '</small></div>';
+  }
+  return '<section class="teambar" lang="' + L + '">' +
+    '<span class="teambar-icon">🤝</span>' +
+    '<div class="grow teambar-text"><div class="bold">' + t('teamStars', L) + '</div>' +
+      '<div class="tiny faint">' + t('teamHint', L) + '</div></div>' +
+    '<div class="teamfaces">' + DB.kids.map(function(k){
+      return '<span class="teamface ' + k.color + '" title="' + esc(k.name) + '">' + k.emoji + '</span>';
+    }).join('') + '</div>' +
+    stat('⭐ ' + ts.today, t('statToday', L)) +
+    stat(ts.week, t('statWeek', L)) +
+    stat(ts.total, t('statTotal', L)) +
   '</section>';
 }
 
@@ -182,7 +203,7 @@ function routineView(){
   var totalStars = DB.kids.reduce(function(a, k){ return a + starsOn(k.id, dt); }, 0);
   var isToday = sameDay(dt, TODAY);
 
-  return syncBanner() + tipBanner('t-routine', t('tipTitle', L), t('tipBody', L)) +
+  return syncBanner() + teamBar(dt, L) + tipBanner('t-routine', t('tipTitle', L), t('tipBody', L)) +
 
     '<div class="cal-toolbar" lang="' + L + '">' +
       '<button class="btn btn-icon" data-action="day-prev" aria-label="&larr;">' + icon('cleft') + '</button>' +

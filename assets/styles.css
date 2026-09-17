@@ -437,10 +437,11 @@ body.rail-hidden .app{grid-template-columns:minmax(0,1fr)}
   font-size:12.5px;font-weight:800;color:var(--c);
 }
 .kidcol-foot{
-  margin-top:auto;padding:15px 20px;border-top:2px dashed var(--cb);
-  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin-top:auto;padding:13px 20px;border-top:2px dashed var(--cb);
+  display:flex;align-items:center;justify-content:space-between;gap:4px 10px;flex-wrap:wrap;
   font-size:14px;font-weight:750;color:var(--c);
 }
+.kidcol-foot .foot-week{flex-basis:100%;font-size:12.5px;opacity:.85}
 
 /* A narrow column has to spend less on chrome or the title has no room left.
    Browsers without container queries simply keep the roomier sizing. */
@@ -475,6 +476,44 @@ body.rail-hidden .app{grid-template-columns:minmax(0,1fr)}
 }
 .kidcol-head{padding:20px 20px 14px;display:flex;align-items:center;gap:14px}
 .kidcol-name{font-size:24px;font-weight:800;letter-spacing:-.025em;color:var(--c);line-height:1.1}
+
+/* ---------- team stars ---------- */
+.teambar{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  background:linear-gradient(120deg,var(--gold-soft),var(--panel) 70%);
+  border:2px solid var(--gold);border-radius:24px;padding:10px 16px;margin-bottom:14px;
+  box-shadow:0 2px 0 var(--gold);
+}
+.teambar-icon{font-size:30px;line-height:1}
+.teambar-text{min-width:140px}
+.teamfaces{display:flex}
+.teamface{
+  width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:18px;
+  background:var(--cs);border:2px solid var(--c);margin-left:-8px;
+}
+.teamface:first-child{margin-left:0}
+.teamstat{
+  display:flex;flex-direction:column;align-items:center;min-width:64px;
+  background:var(--panel);border:2px solid var(--gold);border-radius:16px;padding:4px 12px;
+}
+.teamstat b{font-size:19px;font-weight:850;color:var(--gold-ink);line-height:1.2}
+.teamstat small{font-size:11px;font-weight:700;color:var(--ink-3)}
+@media (max-width:520px){ .teamfaces{display:none} .teambar{gap:10px} }
+
+/* per-child star values in the task editor */
+.kidstars{display:flex;flex-direction:column;gap:8px}
+.kidstar{
+  display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:16px;
+  background:var(--cs);border:2px solid var(--cb);
+}
+.kidstar .btn-icon{width:40px;font-size:20px;font-weight:800}
+.kidstar-inp{width:72px;min-height:40px;text-align:center;font-weight:800;padding:6px}
+.kidstar-star{font-size:18px}
+
+/* grouped icon picker */
+.emojiscroll{max-height:300px;overflow-y:auto;border:1.5px solid var(--line);border-radius:var(--r);padding:8px 10px}
+.emojigroup{margin-bottom:8px}
+.emojigroup-name{font-size:11.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin:4px 2px 6px}
 
 /* ---------- rewards ---------- */
 .rewardcard{

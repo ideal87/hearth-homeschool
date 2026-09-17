@@ -105,6 +105,8 @@ var Tour = {
 /* ------------------------------------------------------------------ */
 var TOURS = {
   routine: [
+    { sel:'.teambar', emoji:'🤝', title:'Team stars',
+      body:'Half of every star the children earn also goes into a shared team tally - so helping a brother or sister finish matters too. Nobody&rsquo;s own bank goes down.' },
     { sel:'.board', emoji:'📋', title:'One column per child',
       body:'The whole family on one screen, colour-coded. On a tablet you swipe sideways; on a big screen they sit side by side. Every tick is saved straight away, and syncs to your other devices when signed in.' },
     { sel:'.ringwrap', emoji:'🎯', title:'How far through the day',
@@ -115,8 +117,8 @@ var TOURS = {
       body:'The dashed cards are entries from the <b>Calendar</b> scheduled for that child today, dropped into the right part of the day. The calendar itself never shows routines - that would bury it in "brush teeth".' },
     { sel:'.task', emoji:'👆', title:'The whole row is the button',
       body:'No tiny checkbox to aim at. Tap anywhere and it ticks, turns the child&rsquo;s colour, and pays out its stars.' },
-    { sel:'.kidcol-foot', emoji:'⭐', title:'Stars add up as you go',
-      body:'Each task is worth what you set it to, and the running total for the day sits at the foot of every column.' },
+    { sel:'.kidcol-foot', emoji:'⭐', title:'How close to the most',
+      body:'The foot of each column shows stars earned against the most possible today, and the same for the whole week.' },
     { sel:'[data-action="manage-tasks"]', emoji:'✏️', title:'Add your own',
       body:'<b>Manage</b> opens the full list: add, edit or delete routines and chores, set who does them, which days, and what they are worth.' }
   ],

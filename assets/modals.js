@@ -7,6 +7,20 @@ function emojiPicker(list, current, name){
     return '<button class="chip chip-sm' + (e === current ? ' on' : '') +
            '" style="font-size:22px" data-pick="' + e + '">' + e + '</button>'; }).join('') + '</div>';
 }
+/* one single-select picker, laid out in labelled groups */
+function emojiPickerGrouped(groups, current, name){
+  var known = [];
+  groups.forEach(function(g){ known = known.concat(g.list); });
+  var head = (current && known.indexOf(current) === -1)
+    ? [{ name:'Current', list:[current] }] : [];
+  return '<div data-picker="' + name + '">' + head.concat(groups).map(function(g){
+    return '<div class="emojigroup"><div class="emojigroup-name">' + g.name + '</div>' +
+      '<div class="row wrap">' + g.list.map(function(e){
+        return '<button class="chip chip-sm' + (e === current ? ' on' : '') +
+               '" style="font-size:22px" data-pick="' + e + '">' + e + '</button>'; }).join('') +
+      '</div></div>';
+  }).join('') + '</div>';
+}
 function kidPicker(selected, name){
   return '<div class="row wrap" data-picker="' + name + '">' + DB.kids.map(function(k){
     return '<button class="chip ' + k.color + (selected.indexOf(k.id) > -1 ? ' on tint' : '') +
@@ -72,7 +86,7 @@ function manageTasksModal(){
                 (t.kids.length ? t.kids.map(kname).join(', ') : 'nobody') + ' &middot; ' +
                 (t.days && t.days.length < 7 ? t.days.map(function(d){ return DAY_ABBR[d]; }).join(' ') : 'every day') +
                 '</div></div>' +
-              starPill(t.stars) +
+              taskStarsSummary(t) +
               '<button class="btn btn-sm btn-icon" data-action="task-edit:' + t.id + '" aria-label="Edit">' + icon('edit', 'i-sm') + '</button>' +
               '<button class="btn btn-sm btn-icon btn-danger" data-action="task-del:' + t.id + '" aria-label="Delete">' + icon('trash', 'i-sm') + '</button>' +
             '</div>';
@@ -84,6 +98,17 @@ function manageTasksModal(){
   draw();
   api.redraw = draw;
   return api;
+}
+
+/* one pill if every child earns the same, otherwise one per child */
+function taskStarsSummary(t){
+  var vals = t.kids.map(function(id){ return starsFor(t, id); });
+  var same = vals.every(function(v){ return v === vals[0]; });
+  if (same) return starPill(vals.length ? vals[0] : (+t.stars || 0));
+  return '<span class="row" style="gap:4px">' + t.kids.map(function(id){
+    var k = kid(id);
+    return '<span class="star" title="' + esc(k ? k.name : '') + '">' + (k ? k.emoji : '') + ' ' + starsFor(t, id) + '</span>';
+  }).join('') + '</span>';
 }
 
 function taskEditModal(taskId){
@@ -101,21 +126,21 @@ function taskEditModal(taskId){
       '<div class="field"><label>What is it? &middot; 한국어 <span class="faint">(optional)</span></label>' +
         '<input class="inp" id="tk-title-ko" lang="ko" value="' + esc((t.titles && t.titles.ko) || '') + '" placeholder="이불 정리하기"></div>' +
         '<div class="hint" style="margin:-8px 0 14px">Shown instead of the English name to any child whose routine language is 한국어. Leave it blank to use the English name for everyone.</div>' +
-      '<div class="field"><label>Picture</label>' + emojiPicker(TASK_EMOJI, t.emoji, 'emoji') + '</div>' +
-      '<div class="f2">' +
-        '<div class="field"><label>Kind</label>' +
-          '<div class="row" data-picker="kind">' +
-            '<button class="chip' + (t.kind === 'routine' ? ' on' : '') + '" data-pick="routine">Routine</button>' +
-            '<button class="chip' + (t.kind === 'chore' ? ' on' : '') + '" data-pick="chore">Chore</button>' +
-          '</div></div>' +
-        '<div class="field"><label>Stars</label>' +
-          '<input class="inp" id="tk-stars" type="number" min="0" value="' + t.stars + '"></div>' +
-      '</div>' +
+      '<div class="field"><label>Picture</label>' +
+        '<div class="emojiscroll">' + emojiPickerGrouped(TASK_EMOJI_GROUPS, t.emoji, 'emoji') + '</div></div>' +
+      '<div class="field"><label>Kind</label>' +
+        '<div class="row" data-picker="kind">' +
+          '<button class="chip' + (t.kind === 'routine' ? ' on' : '') + '" data-pick="routine">Routine</button>' +
+          '<button class="chip' + (t.kind === 'chore' ? ' on' : '') + '" data-pick="chore">Chore</button>' +
+        '</div></div>' +
       '<div class="field"><label>Part of the day</label>' +
         '<div class="row" data-picker="slot">' + SLOTS.map(function(s){
           return '<button class="chip ' + s.cls + (t.slot === s.id ? ' on tint' : '') + '" data-pick="' + s.id + '">' +
                  s.emoji + ' ' + s.name + '</button>'; }).join('') + '</div></div>' +
       '<div class="field"><label>Who does it?</label>' + kidPicker(t.kids, 'kids') + '</div>' +
+      '<div class="field"><label>Stars for each child</label>' +
+        '<div id="tk-kidstars" class="kidstars"></div>' +
+        '<div class="hint">Older children can earn more for the same job.</div></div>' +
       '<div class="field mb0"><label>Which days?</label>' + dayPicker(t.days || [0,1,2,3,4,5,6], 'days') + '</div>',
     foot:
       (isNew ? '' : '<button class="btn btn-danger left" data-action="task-del:' + t.id + '">' + icon('trash', 'i-sm') + 'Delete</button>') +
@@ -124,6 +149,47 @@ function taskEditModal(taskId){
   });
 
   wirePickers(api.el, ['emoji', 'kind', 'slot']);
+
+  /* per-child star values: kept across redraws so typing isn't lost when a
+     child is added or removed */
+  var starMap = {};
+  t.kids.forEach(function(id){ starMap[id] = starsFor(t, id); });
+  function defaultStars(){
+    return (pickedOne(api.el, 'kind') === 'chore') ? DB.settings.starChore : DB.settings.starRoutine;
+  }
+  function captureStars(){
+    $$('[data-kidstar]', api.el).forEach(function(inp){
+      starMap[inp.getAttribute('data-kidstar')] = Math.max(0, +inp.value || 0);
+    });
+  }
+  function drawKidStars(){
+    captureStars();
+    var sel = pickedMulti(api.el, 'kids');
+    $('#tk-kidstars', api.el).innerHTML = sel.length ? sel.map(function(id){
+      var k = kid(id);
+      if (starMap[id] == null) starMap[id] = +defaultStars() || 0;
+      return '<div class="kidstar ' + k.color + '">' +
+        '<span class="grow bold">' + k.emoji + ' ' + esc(k.name) + '</span>' +
+        '<button class="btn btn-icon btn-sm" data-step="' + id + ':-1" aria-label="Fewer stars">−</button>' +
+        '<input class="inp kidstar-inp" type="number" min="0" inputmode="numeric" data-kidstar="' + id +
+          '" value="' + starMap[id] + '" aria-label="Stars for ' + esc(k.name) + '">' +
+        '<button class="btn btn-icon btn-sm" data-step="' + id + ':1" aria-label="More stars">+</button>' +
+        '<span class="kidstar-star">⭐</span>' +
+      '</div>';
+    }).join('') : '<div class="hint">Pick who does it first.</div>';
+  }
+  drawKidStars();
+  api.el.addEventListener('click', function(e){
+    if (e.target.closest('[data-picker="kids"] [data-pick]')) { drawKidStars(); return; }
+    var step = e.target.closest('[data-step]');
+    if (step){
+      var p = step.getAttribute('data-step').split(':');
+      var inp = $('[data-kidstar="' + p[0] + '"]', api.el);
+      if (inp) inp.value = Math.max(0, (+inp.value || 0) + (+p[1]));
+      captureStars();
+    }
+  });
+
   $('#tk-save', api.el).addEventListener('click', function(){
     var title = $('#tk-title', api.el).value.trim();
     if (!title){ toast('Give it a name first', 'warn'); return; }
@@ -132,20 +198,23 @@ function taskEditModal(taskId){
     var days = pickedMulti(api.el, 'days').map(Number);
     if (!days.length) days = [0,1,2,3,4,5,6];
     var ko = $('#tk-title-ko', api.el).value.trim();
+    captureStars();
+    var starsByKid = {};
+    kids.forEach(function(id){ starsByKid[id] = Math.max(0, +starMap[id] || 0); });
     var patch = {
       title: title,
       titles: ko ? { ko: ko } : null,
       emoji: pickedOne(api.el, 'emoji') || '⭐',
       kind:  pickedOne(api.el, 'kind') || 'routine',
       slot:  pickedOne(api.el, 'slot') || 'morning',
-      stars: Math.max(0, +$('#tk-stars', api.el).value || 0),
+      stars: starsByKid[kids[0]],          /* fallback for anything reading one value */
+      starsByKid: starsByKid,
       kids:  kids,
       days:  days
     };
     if (isNew) addTask(patch); else updateTask(t.id, patch);
     api.close();
-    var mgr = $('.modal-body');
-    render();
+    render(); refreshManager();
     toast(isNew ? 'Task added' : 'Task saved', 'ok', patch.emoji);
   });
   return api;
@@ -413,12 +482,12 @@ function kidDrawer(kidId, tab){
       return '<div style="margin-bottom:20px">' +
         '<div class="row ' + s.cls + '" style="margin-bottom:10px"><span class="task-emoji">' + s.emoji + '</span>' +
         '<span class="bold" style="color:var(--c)">' + s.name + '</span><span class="grow"></span>' +
-        starPill(ts.reduce(function(a, t){ return a + (+t.stars || 0); }, 0)) + '</div>' +
+        starPill(ts.reduce(function(a, t){ return a + starsFor(t, kidId); }, 0)) + '</div>' +
         (ts.length ? ts.map(function(t){
           return '<div class="task ' + k.color + (isTaskDone(kidId, t.id, TODAY) ? ' done' : '') + '" style="margin-bottom:8px">' +
             '<span class="task-emoji">' + t.emoji + '</span>' +
             '<span class="grow task-title" lang="' + (k.lang || 'en') + '">' +
-            esc(itemTitle(t, k.lang || 'en')) + '</span>' + starPill(t.stars) + '</div>';
+            esc(itemTitle(t, k.lang || 'en')) + '</span>' + starPill(starsFor(t, kidId)) + '</div>';
         }).join('') : '<div class="tiny faint">Nothing yet.</div>') + '</div>';
     }).join('') +
     '<button class="btn btn-block" data-action="manage-tasks">' + icon('edit', 'i-sm') + 'Manage tasks</button>';
@@ -499,7 +568,7 @@ function kidMode(kidId){
           return '<button class="kid-task ' + k.color + (done ? ' done' : '') + '" data-ktask="' + task.id + '">' +
             '<span class="task-emoji">' + task.emoji + '</span>' +
             '<span class="grow kt">' + esc(itemTitle(task, L)) + '</span>' +
-            starPill(task.stars) + checkCircle() + '</button>';
+            starPill(starsFor(task, kidId)) + checkCircle() + '</button>';
         }).join('') +
         (!tasks.length && !evs.length ? '<div class="ph">' + t('nothingToDo', L) + '</div>' : '') +
         (slotComplete(kidId, dt, state.slot)
@@ -540,7 +609,7 @@ function kidMode(kidId){
       var nowDone = toggleTask(kidId, id, TODAY);
       var def = taskById(id);
       FX.tick(row, nowDone);
-      if (nowDone && def) toast(t('plusStars', L, { n:def.stars }), 'gold', '⭐');
+      if (nowDone && def) toast(t('plusStars', L, { n:starsFor(def, kidId) }), 'gold', '⭐');
       draw();
       if (nowDone){
         var nowDay = dayProgress(kidId, TODAY);

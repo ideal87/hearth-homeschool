@@ -94,16 +94,37 @@ var PALETTES = [
   { id:'k4', name:'Amber' }, { id:'k5', name:'Sky' },  { id:'k6', name:'Mint' }
 ];
 var KID_EMOJI = ['🦊','🐰','🐻','🐸','🦁','🐬','🦉','🐢','🦋','🐼','🐨','🦄'];
-/* Routine tasks can also use the subject icons the calendar uses, so
-   "Math practice" can look like Math. Events do not get the household icons -
-   an event's picture comes from its subject. */
-var TASK_EMOJI = (function(){
-  var base = ['⏰','👕','🦷','🥣','🐕','🪴','🧹','🍽️','📚','🍴','🥤','🧸','🧺','🎒','🌙','🛏️','🚿','🧦','💧','🗑️','🏃','🎵'];
+/* Icons a parent can give a routine or chore, grouped so the picker stays
+   findable. The calendar's subject icons are folded in too, so "Math practice"
+   can look like Math. Events don't get these - an event's picture comes from
+   its subject. */
+var TASK_EMOJI_GROUPS = [
+  { name:'Morning & self-care', list:['⏰','🛏️','👕','🦷','🪥','🚿','🛁','🧼','🧴','💇','🧦','👟'] },
+  { name:'Food & kitchen',      list:['🥣','🍳','🍎','🥕','🥛','🥪','🍽️','🍴','🥤','🧃'] },
+  { name:'Tidy & household',    list:['🧹','🧺','🧸','🗑️','🧽','🪣','🧻','📦','🛒','🔑'] },
+  { name:'Pets & plants',       list:['🐕','🐈','🐟','🐇','🐔','🪴','🌱','💧'] },
+  { name:'Learning',            list:['🎒','📚','📖','✏️','📝','🔤','🔢','🧮','🔬','🌍','🏛️','💻','🧩'] },
+  { name:'Faith & family',      list:['🙏','✝️','⛪','🕊️','📓','👨‍👩‍👧','❤️','🤝','💌','🎁'] },
+  { name:'Active & outdoors',   list:['⚽','🏃','🚲','🏊','🤸','🧗','🎾','🛝','🌳','☀️'] },
+  { name:'Creative & music',    list:['🎨','🖍️','✂️','🧶','📷','🎭','🎵','🎹','🎸','🥁'] },
+  { name:'Calm & bedtime',      list:['🌙','🧘','💤','🕯️','🫧','🎧'] }
+];
+(function foldInSubjects(){
+  var all = [];
+  TASK_EMOJI_GROUPS.forEach(function(g){ all = all.concat(g.list); });
+  var extra = [];
   Object.keys(SUBJECTS).forEach(function(k){
     var e = SUBJECTS[k].emoji;
-    if (base.indexOf(e) === -1) base.push(e);
+    if (all.indexOf(e) === -1 && extra.indexOf(e) === -1) extra.push(e);
   });
-  return base;
+  if (extra.length) TASK_EMOJI_GROUPS.push({ name:'Lessons', list:extra });
+})();
+var TASK_EMOJI = (function(){
+  var out = [];
+  TASK_EMOJI_GROUPS.forEach(function(g){
+    g.list.forEach(function(e){ if (out.indexOf(e) === -1) out.push(e); });
+  });
+  return out;
 })();
 var REWARD_EMOJI = ['🍿','🌙','🍕','🛝','🍦','📚','🧸','⛺','🎬','🎮','🚲','🏊'];
 var GRADES = ['Pre-K','Kindergarten','Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6'];

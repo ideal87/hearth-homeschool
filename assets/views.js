@@ -92,6 +92,38 @@ function rewardRow(r){
   '</button>';
 }
 
+/* A day whose books are closed keeps its totals but not its ticks, so the
+   column shows what happened instead of rows nobody can change. */
+function closedColumn(k, dt, L, evs){
+  var day = dayProgress(k.id, dt);
+  return '<section class="kidcol closed ' + k.color + '" lang="' + L + '">' +
+    '<div class="kidcol-head">' +
+      progressRing(day.done, day.total) +
+      '<div class="grow"><div class="kidcol-name">' + esc(k.name) + '</div>' +
+        '<div class="tiny faint">' + fmtLongLoc(dt, L) + '</div></div>' +
+      '<span style="font-size:34px;line-height:1">' + k.emoji + '</span>' +
+    '</div>' +
+    '<div class="closedday">' +
+      '<span class="em">📕</span>' +
+      '<div class="ct">' + t('dayClosed', L) + '</div>' +
+      '<div class="row wrap" style="justify-content:center;gap:8px;margin-top:10px">' +
+        '<span class="star big">' + t('earnedThatDay', L, { n:starsOn(k.id, dt) }) + '</span>' +
+        '<span class="star team big">' + t('teamThatDay', L, { n:teamStarsFrom(k.id, dt) }) + '</span>' +
+      '</div>' +
+      '<div class="tiny faint" style="margin-top:10px">' + t('dayClosedHint', L) + '</div>' +
+    '</div>' +
+    (evs.length
+      ? '<div class="slotlabel">📅 ' + t('todaysLessons', L) + '<span class="ct">' + evs.length + '</span></div>' +
+        '<div class="tasklist">' + evs.map(function(e){ return eventRow(k, e, L); }).join('') + '</div>'
+      : '') +
+    '<div class="kidcol-foot">' +
+      '<span>' + t('ofMaxToday', L, { n:starsOn(k.id, dt), m:maxStarsOn(k.id, dt) }) + '</span>' +
+      '<span>' + t('doneCount', L, { d:day.done, t:day.total }) + '</span>' +
+      '<span class="foot-week">' + t('weekOfMax', L, { n:starsInWeek(k.id, dt), m:maxStarsInWeek(k.id, dt) }) + '</span>' +
+    '</div>' +
+  '</section>';
+}
+
 function kidColumn(k, dt){
   var slot = state.slot;
   var L = k.lang || 'en';                       /* this child reads in their own language */
@@ -103,6 +135,8 @@ function kidColumn(k, dt){
   var evs = eventsOn(dt, true).filter(function(e){
     return e.kids.indexOf(k.id) > -1 && slotForMinutes(e.start) === slot;
   });
+
+  if (isClosedDate(dt)) return closedColumn(k, dt, L, evs);
 
   var due = rewardsDue(k.id, dt);        /* cashed in and not collected yet */
   var prog = slotProgress(k.id, dt, slot);
@@ -581,6 +615,13 @@ function settingsView(){
               (s.rewardsPerMonth == null ? 1 : s.rewardsPerMonth) + '"></div>' +
             '<div class="hint">How many rewards one child may cash in per calendar month. The team pot ' +
             'has an allowance of its own, the same size. 0 means no limit.</div>' +
+            '<div class="field" style="margin:14px 0 0"><label>Close each day after</label>' +
+              '<div class="row"><input class="inp" type="number" min="0" max="60" data-set="sealAfterDays" ' +
+                'value="' + (s.sealAfterDays == null ? 2 : s.sealAfterDays) + '" style="max-width:120px">' +
+                '<span class="sm muted">days</span></div></div>' +
+            '<div class="hint">Once a day is closed, what each child earned that day is written down and ' +
+            'the individual ticks are cleared, so editing or deleting a task later can never change it - ' +
+            'and the saved data stays small. 0 keeps every tick for ever.</div>' +
           '</div>' +
           '<div class="list">' +
             settingRow('Parent approves redemptions',

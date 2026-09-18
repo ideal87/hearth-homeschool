@@ -55,8 +55,8 @@ is git-ignored so the addresses stay out of this public repo; copy
 public by design — sign-in plus the rules are what protect the data.
 
 Firestore layout: `families/main` holds kids, tasks, events, rewards,
-redemptions, exceptions and settings; ticks live in `families/main/days/YYYY-MM`
-so no document ever approaches the 1 MiB limit. Every change is pushed as
+redemptions, exceptions and settings; ticks and the closed-day star ledger live in
+`families/main/days/YYYY-MM` so no document ever approaches the 1 MiB limit. Every change is pushed as
 individual field updates, so two devices editing different things never
 overwrite each other.
 
@@ -147,9 +147,8 @@ change purse with it, past ticks included.
   rows in the task editor, so an older child can earn more for the same job. New
   tasks start from the defaults in Settings. Tasks saved before this fall back to
   their single `stars` value.
-- A bank is `opening balance + every routine ever ticked − everything cashed in`,
-  recomputed from the ticks on every render. It cannot drift out of sync. Changing
-  a task's value changes what its past ticks are worth too.
+- A bank is `opening balance + every routine ever earned − everything cashed in`,
+  recomputed on every render, so it cannot drift out of sync.
 - The foot of each column shows the child's own stars **against the most possible**
   today and this week (Monday to Sunday), counting only the routines scheduled on
   each day.
@@ -161,6 +160,31 @@ change purse with it, past ticks included.
   well as for each child.
 - **Parent approves** on means cashing in creates a request you approve or deny on
   the Rewards screen; denying refunds the stars.
+
+### Closing the books
+
+Stars used to be worked out from the ticks every single time they were shown, so
+renaming a task, repricing it or deleting it quietly rewrote history. They are now
+**banked**: after `settings.sealAfterDays` days (default 2) a day is **closed**. What
+each child earned that day is written down once in `DB.ledger`, and that day's
+individual ticks are dropped.
+
+- A closed day cannot move again. Change a task from 5 stars to 300, delete it, or
+  delete every task you have - last week's totals stay exactly as they were.
+- Today and the two days behind it stay live, so a forgotten tick can still be added
+  and a mistake can still be undone.
+- On the board a closed day shows what happened - stars earned, stars given to the
+  team, how many jobs were done - instead of rows nobody can change.
+- It is also how the data stays small: one row per child per day instead of one key
+  per tick. A month of a three-child family shrinks from about 21 KB of ticks to
+  about 5 KB, and it is the same saving in Firestore.
+- Set it to 0 in Settings to switch closing off entirely and keep every tick for ever.
+
+A ledger row is `[ownStars, teamStars, done, total, maxOwn, maxTeam]`, keyed
+`childId|YYYY-MM-DD`, so it shards by month exactly like the ticks do. Days close on
+load, when cloud data arrives, at midnight, and before any edit to a task or a child -
+an edit can never reach back past the window. A day is only written once, so two
+devices closing the same day agree.
 
 ### Rewards
 
@@ -238,9 +262,15 @@ assets/app.js         shell, hash router, delegated action handler
   switch in `app.js`. Adding a button means adding a `case`.
 - All reads and writes go through `store.js`; nothing else touches `localStorage`.
   `saveDB()` runs on every mutation, so there is no save button to forget.
-- Star totals are always derived, never stored — see `starsFor`, `starsOn`,
-  `maxStarsOn`, `starsInWeek`, `teamStars`, `teamBank`, `starBank`. Chores are told
-  apart by `isTeamTask`, and the team spends under the id `TEAM_ID` ('team').
+- Star totals for **open** days are derived from the ticks (`starsFor`, `starsOn`,
+  `maxStarsOn`, `starsInWeek`, `teamStars`, `teamBank`, `starBank`); **closed** days
+  come from `DB.ledger` instead - see `sealOldDays`, `sealDay`, `isClosedDate`. Each
+  public function falls back to the live figure when a day has no row, so a read that
+  happens before the books are closed is still correct.
+- Chores are told apart by `isTeamTask`, and the team spends under `TEAM_ID` ('team').
+- `store.js` runs `sealOldDays()` as it loads, below where the function is declared -
+  keep any constant it uses inside the function, because a `var` further down the file
+  is still `undefined` at that moment.
 - Child and subject colours are CSS custom properties (`--c`, `--cs`, `--cb`) set by
   one class, so recolouring a child is a one-line change.
 - Recurring events use `days:[0-6]` (0 = Monday); one-offs use `date:'YYYY-MM-DD'`.

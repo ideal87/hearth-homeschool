@@ -293,6 +293,7 @@ function seedDB(){
     redemptions: [],
     completions: {},
     eventDone: {},
+    ledger: {},
     exceptions: {},
     settings: {
       schoolName:'Bennett Family Academy',
@@ -313,7 +314,8 @@ function seedDB(){
       railHidden:false,
       rewardCostsDoubled:true,
       rewardsPerMonth:1,
-      teamRewardsAdded:true
+      teamRewardsAdded:true,
+      sealAfterDays:2
     }
   };
 }
@@ -347,7 +349,7 @@ function normaliseDB(db){
   for (var k in fresh.settings)
     if (!Object.prototype.hasOwnProperty.call(db.settings, k)) db.settings[k] = fresh.settings[k];
   ['kids', 'tasks', 'events', 'rewards', 'redemptions'].forEach(function(s){ db[s] = db[s] || []; });
-  ['completions', 'eventDone', 'exceptions'].forEach(function(s){ db[s] = db[s] || {}; });
+  ['completions', 'eventDone', 'exceptions', 'ledger'].forEach(function(s){ db[s] = db[s] || {}; });
   db.version = db.version || 2;
   return db;
 }
@@ -375,6 +377,7 @@ function replaceDB(next){
   DB = normaliseDB(next);
   backfillSeedTitles(DB);
   try { localStorage.setItem(STORE_KEY, JSON.stringify(DB)); } catch (e){}
+  sealOldDays();        /* a device that was away closes the days it missed */
 }
 function resetDB(){ DB = seedDB(); saveDB(); }
 
@@ -404,6 +407,7 @@ function backfillSeedTitles(db){
 
 DB = loadDB();
 if (backfillSeedTitles(DB)) saveDB();
+sealOldDays();          /* anything past the window is closed before it is shown */
 
 /* ---------------- kids ---------------- */
 function allKids(){ return DB.kids; }
@@ -431,6 +435,7 @@ function updateKid(id, patch){
   saveDB();
 }
 function removeKid(id){
+  sealOldDays();
   DB.kids = DB.kids.filter(function(k){ return k.id !== id; });
   DB.tasks.forEach(function(t){ t.kids = t.kids.filter(function(x){ return x !== id; }); });
   DB.tasks = DB.tasks.filter(function(t){ return t.kids.length; });
@@ -440,6 +445,9 @@ function removeKid(id){
   Object.keys(DB.completions).forEach(function(key){
     if (key.split('|')[0] === id) delete DB.completions[key];
   });
+  Object.keys(DB.ledger).forEach(function(key){
+    if (key.slice(0, key.lastIndexOf('|')) === id) delete DB.ledger[key];
+  });
   saveDB();
 }
 
@@ -448,13 +456,16 @@ function taskById(id){
   for (var i = 0; i < DB.tasks.length; i++) if (DB.tasks[i].id === id) return DB.tasks[i];
   return null;
 }
-function addTask(o){ o.id = uid('t'); DB.tasks.push(o); saveDB(); return o; }
+function addTask(o){
+  sealOldDays(); o.id = uid('t'); DB.tasks.push(o); saveDB(); return o; }
 function updateTask(id, patch){
+  sealOldDays();
   var t = taskById(id); if (!t) return;
   for (var p in patch) t[p] = patch[p];
   saveDB();
 }
 function removeTask(id){
+  sealOldDays();
   DB.tasks = DB.tasks.filter(function(t){ return t.id !== id; });
   Object.keys(DB.completions).forEach(function(key){
     if (key.split('|')[1] === id) delete DB.completions[key];
@@ -474,6 +485,7 @@ function tasksFor(kidId, dateObj, slot){
 function compKey(kidId, taskId, dateObj){ return kidId + '|' + taskId + '|' + ymd(dateObj); }
 function isTaskDone(kidId, taskId, dateObj){ return !!DB.completions[compKey(kidId, taskId, dateObj)]; }
 function toggleTask(kidId, taskId, dateObj){
+  if (isClosedDate(dateObj)) return isTaskDone(kidId, taskId, dateObj);
   var key = compKey(kidId, taskId, dateObj);
   if (DB.completions[key]) delete DB.completions[key];
   else DB.completions[key] = true;
@@ -531,6 +543,82 @@ function toggleEventDone(evKey){
   return !!DB.eventDone[evKey];
 }
 
+/* ---------------- closing the books on a day ----------------
+   Stars used to be worked out from the ticks every time they were shown, so
+   renaming a task, changing what it is worth or deleting it rewrote history.
+   After `settings.sealAfterDays` days a day is closed: what each child earned
+   is written down once in `DB.ledger`, and that day's ticks are thrown away.
+   From then on the totals cannot move, and the saved data is roughly a tenth
+   of the size - one short row per child per day instead of one key per tick.
+
+   A ledger row is [ownStars, teamStars, done, total, maxOwn, maxTeam].
+   ---------------------------------------------------------------- */
+function sealAfterDays(){
+  var n = DB.settings.sealAfterDays;
+  return n == null ? 2 : Math.max(0, +n || 0);       /* 0 = never close a day */
+}
+/* the oldest day that can still be ticked */
+function openFrom(){ return addDays(TODAY, -sealAfterDays()); }
+function isClosedDate(dateObj){
+  if (!sealAfterDays()) return false;
+  return ymd(dateObj) < ymd(openFrom());
+}
+function ledgerKey(kidId, ymdStr){ return kidId + '|' + ymdStr; }
+function ledgerRow(kidId, dateObj){
+  var r = DB.ledger[ledgerKey(kidId, ymd(dateObj))];
+  return (r && r.length) ? r : null;
+}
+
+/* every date this family has touched, so we know how far back to close */
+function firstUsedYmd(){
+  var first = null;
+  function seen(d){ if (d && (first === null || d < first)) first = d; }
+  Object.keys(DB.completions).forEach(function(k){ seen(k.slice(-10)); });
+  Object.keys(DB.ledger).forEach(function(k){ seen(k.slice(-10)); });
+  return first;
+}
+
+/* Write one day into the ledger and drop its ticks. Never touches a day that
+   is already there, so two devices closing the same day agree. */
+function sealDay(ymdStr){
+  var dt = parseYmd(ymdStr), wrote = false;
+  DB.kids.forEach(function(k){
+    var key = ledgerKey(k.id, ymdStr);
+    if (DB.ledger[key]) return;
+    var prog = liveDayProgress(k.id, dt);
+    var row = [
+      liveStarsOn(k.id, dt), liveTeamStarsFrom(k.id, dt),
+      prog.done, prog.total,
+      liveMaxStarsOn(k.id, dt), liveMaxTeamStarsFrom(k.id, dt)
+    ];
+    /* a day with nothing scheduled and nothing done needs no row at all */
+    if (!row[0] && !row[1] && !row[2] && !row[3]) return;
+    DB.ledger[key] = row; wrote = true;
+  });
+  Object.keys(DB.completions).forEach(function(key){
+    if (key.slice(-10) === ymdStr){ delete DB.completions[key]; wrote = true; }
+  });
+  return wrote;
+}
+
+/* Close every day that has fallen out of the window. Runs on load, when cloud
+   data arrives, at midnight, and before any edit to tasks or children - so an
+   edit can never reach back past the window. */
+function sealOldDays(){
+  if (!sealAfterDays()) return false;
+  var first = firstUsedYmd();
+  if (!first) return false;
+  /* the guard is a literal: this runs at start-up, before any var above it
+     has been assigned */
+  var day = parseYmd(first), stop = openFrom(), changed = false, guard = 0;
+  while (ymd(day) < ymd(stop) && guard++ < 800){
+    if (sealDay(ymd(day))) changed = true;
+    day = addDays(day, 1);
+  }
+  if (changed) saveDB();
+  return changed;
+}
+
 /* ---------------- rewards + stars ---------------- */
 function rewardById(id){
   for (var i = 0; i < DB.rewards.length; i++) if (DB.rewards[i].id === id) return DB.rewards[i];
@@ -563,8 +651,8 @@ function starsFor(task, kidId){
    child's own bank. */
 function isTeamTask(task){ return !!task && task.kind === 'chore'; }
 
-/* stars a child earned on one date: the routines they ticked */
-function starsOn(kidId, dateObj){
+/* ---- what the ticks say, for a day that is still open ---- */
+function liveStarsOn(kidId, dateObj){
   var total = 0;
   tasksFor(kidId, dateObj).forEach(function(t){
     if (isTeamTask(t)) return;
@@ -572,13 +660,11 @@ function starsOn(kidId, dateObj){
   });
   return total;
 }
-/* the most a child could earn on a date if they did every routine */
-function maxStarsOn(kidId, dateObj){
+function liveMaxStarsOn(kidId, dateObj){
   return tasksFor(kidId, dateObj).reduce(function(a, t){
     return isTeamTask(t) ? a : a + starsFor(t, kidId); }, 0);
 }
-/* what one child's chores put into the team pot on a date */
-function teamStarsFrom(kidId, dateObj){
+function liveTeamStarsFrom(kidId, dateObj){
   var total = 0;
   tasksFor(kidId, dateObj).forEach(function(t){
     if (!isTeamTask(t)) return;
@@ -586,10 +672,25 @@ function teamStarsFrom(kidId, dateObj){
   });
   return total;
 }
-function maxTeamStarsFrom(kidId, dateObj){
+function liveMaxTeamStarsFrom(kidId, dateObj){
   return tasksFor(kidId, dateObj).reduce(function(a, t){
     return isTeamTask(t) ? a + starsFor(t, kidId) : a; }, 0);
 }
+
+/* ---- what the day is worth: the ledger if it is closed, the ticks if not.
+   A closed day with no row simply had nothing on it. ---- */
+function fromDayOrLive(kidId, dateObj, slot, live){
+  var row = ledgerRow(kidId, dateObj);
+  if (row) return +row[slot] || 0;
+  return live(kidId, dateObj);       /* still open, or closed with nothing on it */
+}
+/* stars a child earned on one date: the routines they ticked */
+function starsOn(kidId, dateObj){ return fromDayOrLive(kidId, dateObj, 0, liveStarsOn); }
+/* the most a child could earn on a date if they did every routine */
+function maxStarsOn(kidId, dateObj){ return fromDayOrLive(kidId, dateObj, 4, liveMaxStarsOn); }
+/* what one child's chores put into the team pot on a date */
+function teamStarsFrom(kidId, dateObj){ return fromDayOrLive(kidId, dateObj, 1, liveTeamStarsFrom); }
+function maxTeamStarsFrom(kidId, dateObj){ return fromDayOrLive(kidId, dateObj, 5, liveMaxTeamStarsFrom); }
 /* Monday to Sunday around a date */
 function weekDays(dateObj){
   var ws = startOfWeek(dateObj), out = [];
@@ -620,11 +721,12 @@ function maxTeamStarsInWeek(dateObj){
 /* every chore star ever ticked, honouring the carry-over setting like a bank */
 function teamEarnedTotal(){
   var weekStart = startOfWeek(TODAY), total = 0;
+  eachLedgerRow(null, function(row){ total += +row[1] || 0; });
   DB.kids.forEach(function(k){
     earnedDates(k.id).forEach(function(key){
       var dt = parseYmd(key);
       if (!DB.settings.carryOver && dt < weekStart) return;
-      total += teamStarsFrom(k.id, dt);
+      total += liveTeamStarsFrom(k.id, dt);
     });
   });
   return total;
@@ -656,21 +758,41 @@ function slotProgress(kidId, dateObj, slot){
   ts.forEach(function(t){ if (isTaskDone(kidId, t.id, dateObj)) done++; });
   return { done:done, total:ts.length };
 }
-function dayProgress(kidId, dateObj){
+function liveDayProgress(kidId, dateObj){
   var ts = tasksFor(kidId, dateObj);
   var done = 0;
   ts.forEach(function(t){ if (isTaskDone(kidId, t.id, dateObj)) done++; });
   return { done:done, total:ts.length };
 }
+function dayProgress(kidId, dateObj){
+  var row = ledgerRow(kidId, dateObj);
+  if (row) return { done:+row[2] || 0, total:+row[3] || 0 };
+  return liveDayProgress(kidId, dateObj);
+}
 
-/* every date this child has ticked something, so the bank can be summed */
+/* every open date this child has ticked something on, so the bank can be
+   summed; closed days are read from the ledger instead */
 function earnedDates(kidId){
   var seen = {};
   Object.keys(DB.completions).forEach(function(key){
     var p = key.split('|');
-    if (p[0] === kidId) seen[p[2]] = true;
+    if (p[0] !== kidId) return;
+    if (DB.ledger[ledgerKey(kidId, p[2])]) return;    /* already closed */
+    seen[p[2]] = true;
   });
   return Object.keys(seen);
+}
+/* walk the closed days, honouring the carry-over setting */
+function eachLedgerRow(kidId, fn){
+  var weekStart = startOfWeek(TODAY);
+  Object.keys(DB.ledger).forEach(function(key){
+    var cut = key.lastIndexOf('|');
+    if (cut < 0) return;
+    if (kidId && key.slice(0, cut) !== kidId) return;
+    var ymdStr = key.slice(cut + 1);
+    if (!DB.settings.carryOver && parseYmd(ymdStr) < weekStart) return;
+    fn(DB.ledger[key], ymdStr, key.slice(0, cut));
+  });
 }
 function parseYmd(s){ var p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
 
@@ -678,10 +800,11 @@ function parseYmd(s){ var p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p
 function starsEarnedTotal(kidId){
   var weekStart = startOfWeek(TODAY);
   var total = 0;
+  eachLedgerRow(kidId, function(row){ total += +row[0] || 0; });
   earnedDates(kidId).forEach(function(key){
     var dt = parseYmd(key);
     if (!DB.settings.carryOver && dt < weekStart) return;
-    total += starsOn(kidId, dt);
+    total += liveStarsOn(kidId, dt);
   });
   return total;
 }

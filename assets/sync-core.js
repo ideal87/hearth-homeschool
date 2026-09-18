@@ -8,7 +8,8 @@
    Layout in Firestore
      families/main                 kids, tasks, events, rewards,
                                    redemptions, exceptions, settings
-     families/main/days/YYYY-MM    completions + eventDone for that month
+     families/main/days/YYYY-MM    completions, eventDone and the star
+                                   ledger for that month
 
    Ticks are sharded by month because they grow forever; a single
    document would pass Firestore's 1 MiB limit in about 18 months.
@@ -20,7 +21,10 @@
 (function(root){
   var LIST_SECTIONS = ['kids', 'tasks', 'events', 'rewards', 'redemptions'];
   var MAIN_MAPS     = ['exceptions', 'settings'];
-  var DAY_MAPS      = ['completions', 'eventDone'];
+  /* All three are keyed '...|YYYY-MM-DD', so they shard by month the same way.
+     'ledger' holds a day's finished star totals once the books are closed on
+     it; the individual ticks are dropped at that point. */
+  var DAY_MAPS      = ['completions', 'eventDone', 'ledger'];
 
   /* preferences that belong to a device, not the family: the kitchen iPad
      can hide the menu and mute sound without doing the same to a laptop */
@@ -67,7 +71,10 @@
       Object.keys(src).forEach(function(key){
         var mon = monthOf(key);
         if (!mon) return;
-        days[mon] = days[mon] || { completions: {}, eventDone: {} };
+        if (!days[mon]){
+          days[mon] = {};
+          DAY_MAPS.forEach(function(s2){ days[mon][s2] = {}; });
+        }
         days[mon][sec][key] = src[key];
       });
     });
@@ -92,8 +99,7 @@
     });
     db.settings = s;
 
-    db.completions = {};
-    db.eventDone = {};
+    DAY_MAPS.forEach(function(sec){ db[sec] = {}; });
     var days = (docs && docs.days) || {};
     Object.keys(days).forEach(function(mon){
       DAY_MAPS.forEach(function(sec){

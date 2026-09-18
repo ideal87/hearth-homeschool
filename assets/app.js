@@ -397,7 +397,9 @@ document.addEventListener('change', function(e){
   var val = el.type === 'number' ? Math.max(0, +el.value || 0) : el.value;
   setSetting(key, val);
   toast('Saved', 'ok');
-  if (key === 'carryOver') render();
+  /* a shorter window can close days straight away, so do it now */
+  if (key === 'sealAfterDays') sealOldDays();
+  if (key === 'carryOver' || key === 'sealAfterDays') render();
 });
 
 window.addEventListener('hashchange', routeFromHash);
@@ -411,6 +413,7 @@ function clockTick(){
   if (ymd(t) !== ymd(TODAY)){                 /* rolled past midnight */
     var wasOnToday = sameDay(state.cursor, TODAY);
     TODAY = t;
+    sealOldDays();          /* the window moved with the date, so close what fell out */
     if (wasOnToday) state.cursor = t;
     state.slotManual = false;
     changed = true;

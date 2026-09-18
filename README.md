@@ -186,11 +186,18 @@ ticks it, the pot gains 5 and no bank moves at all.
 
 ## Kid-friendly touches on the routine board
 
-Rounded 32px columns with a soft gradient in each child's colour, a progress ring
-that answers "are we nearly done?" without reading, chunky slot buttons showing
-`done/total`, 70px task rows where the whole row is the button, a pop animation on
-the tick, a celebration panel when a child clears the day, and big emoji throughout.
-Minimum tap target is 48px; most are larger. Nothing depends on hover.
+Rounded columns lit with a wash of each child's colour, a progress ring that answers
+"are we nearly done?" without reading, chunky slot buttons showing `done/total`, 70px
+task rows where the whole row is the button, a spring on every press, a celebration
+panel when a child clears the day, and big emoji throughout. Minimum tap target is
+48px; most are larger. Nothing depends on hover.
+
+The look: **Nunito** (the system rounded face takes over if the web font cannot load),
+a soft colour wash behind the app, hairline borders with layered shadows instead of
+heavy outlines, gradient accents on the things you press most, and a frosted top bar.
+Colours are declared once as custom properties, in three palettes - light, system dark
+and forced dark - so the whole app re-themes from a handful of lines. `color-mix()` is
+only ever an enhancement; each use has a plain fallback for older iPads.
 
 **Their view** (Kids → Their view) is the child-facing screen: only their tasks, in
 huge rows, with their star total, and an animal picture instead of a password.

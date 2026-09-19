@@ -227,7 +227,7 @@ function eventModal(key){
   var s = subj(ev.sk);
   var done = isEventDone(ev.key);
   openModal({
-    title: s.emoji + ' ' + esc(ev.title),
+    title: evEmoji(ev) + ' ' + esc(ev.title),
     sub: fmtLong(ev.date) + ' &middot; ' + timeLabel(ev.start) + ' - ' + timeLabel(ev.start + ev.dur),
     body:
       '<div class="row wrap" style="gap:8px;margin-bottom:16px">' +
@@ -247,11 +247,19 @@ function eventModal(key){
   });
 }
 
-function eventEditModal(eventId){
+function eventEditModal(eventId, prefill){
   var e = eventId ? eventById(eventId) : null;
   var isNew = !e;
-  if (isNew) e = { title:'', sk:'circle', kids:kidIds(), start:540, dur:30,
-                   days:DB.settings.schoolDays.slice(), date:null };
+  if (isNew){
+    e = { title:'', sk:'circle', kids:kidIds(), start:540, dur:30,
+          days:DB.settings.schoolDays.slice(), date:null };
+    /* started from a cell on the calendar: that child, that day, that time */
+    if (prefill){
+      if (prefill.kids && prefill.kids.length) e.kids = prefill.kids.slice();
+      if (prefill.date){ e.date = prefill.date; e.days = null; }
+      if (prefill.start != null) e.start = prefill.start;
+    }
+  }
   var repeat = e.date ? 'once' : 'weekly';
 
   var api = openModal({
@@ -263,6 +271,10 @@ function eventEditModal(eventId){
       '<div class="field"><label>What is it? &middot; 한국어 <span class="faint">(optional)</span></label>' +
         '<input class="inp" id="ev-title-ko" lang="ko" value="' + esc((e.titles && e.titles.ko) || '') + '" placeholder="수영 수업"></div>' +
         '<div class="hint" style="margin:-8px 0 14px">Used on the routine board for children whose language is 한국어. The calendar itself always shows the English name.</div>' +
+      '<div class="field"><label>Picture</label>' +
+        '<div class="emojiscroll">' + emojiPickerGrouped(EVENT_EMOJI_GROUPS, evEmoji(e), 'emoji') + '</div>' +
+        '<div class="hint">Leave the subject\u2019s own picture if you like - the colour below is what ' +
+        'groups the week.</div></div>' +
       '<div class="field"><label>Subject colour</label><div class="row wrap" data-picker="sk">' +
         Object.keys(SUBJECTS).map(function(key){
           var s = SUBJECTS[key];
@@ -290,7 +302,7 @@ function eventEditModal(eventId){
       '<button class="btn btn-primary" id="ev-save">' + (isNew ? 'Add event' : 'Save') + '</button>'
   });
 
-  wirePickers(api.el, ['sk', 'repeat']);
+  wirePickers(api.el, ['sk', 'repeat', 'emoji']);
   $('#ev-save', api.el).addEventListener('click', function(){
     var title = $('#ev-title', api.el).value.trim();
     if (!title){ toast('Give it a name first', 'warn'); return; }
@@ -302,6 +314,7 @@ function eventEditModal(eventId){
       title: title,
       titles: koTitle ? { ko: koTitle } : null,
       sk: pickedOne(api.el, 'sk') || 'circle',
+      emoji: pickedOne(api.el, 'emoji') || null,
       kids: kids,
       start: hm($('#ev-start', api.el).value || '09:00'),
       dur: Math.max(5, +$('#ev-dur', api.el).value || 30)

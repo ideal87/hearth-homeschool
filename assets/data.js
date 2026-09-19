@@ -66,6 +66,30 @@ var SUBJECTS = {
 };
 function subj(key){ return SUBJECTS[key] || SUBJECTS.circle; }
 
+/* Pictures for calendar entries. The subject still sets the colour; this is
+   what the entry actually looks like, so "Piano" can be a piano rather than a
+   generic music note. An event with no picture of its own falls back to its
+   subject's. */
+var EVENT_EMOJI_GROUPS = [
+  { name:'Lessons',            list:['📖','✏️','🔢','🧮','🔬','🧪','🔭','🌍','🏛️','📚','🗣️','🔤'] },
+  { name:'School & clubs',     list:['🏫','🎒','🚌','🧑‍🏫','💻','🤖','♟️','🧩','🎯','📋'] },
+  { name:'Music & stage',      list:['🎹','🎻','🎸','🥁','🎤','🎷','🎺','🎵','🎭','🪘'] },
+  { name:'Sport & movement',   list:['🥋','🥊','⚽','🏀','⚾','🎾','🏸','🏊','🚴','🏃','🤸','🧗','🩰','⛸️','🏇','🧘'] },
+  { name:'Faith & family',     list:['⛪','🙏','✝️','🕊️','📓','👨‍👩‍👧','❤️','🤝','🎂','🎉'] },
+  { name:'Out & about',        list:['🏞️','🌳','🏖️','🦁','🐬','🎡','🛝','🛒','🍽️','🎬'] },
+  { name:'Health & home',      list:['🩺','🦷','💉','🏥','🎨','✂️','🍳','🪴','🐕','🛌'] }
+];
+var EVENT_EMOJI = (function(){
+  var out = [];
+  Object.keys(SUBJECTS).forEach(function(k){ out.push(SUBJECTS[k].emoji); });
+  EVENT_EMOJI_GROUPS.forEach(function(g){
+    g.list.forEach(function(e){ if (out.indexOf(e) === -1) out.push(e); });
+  });
+  return out;
+})();
+/* what to draw for one event: its own picture, or its subject's */
+function evEmoji(e){ return (e && e.emoji) || subj(e && e.sk).emoji; }
+
 var SLOTS = [
   { id:'morning', name:'Morning', emoji:'☀️',  cls:'slot-morning' },
   { id:'midday',  name:'Midday',  emoji:'🌤️', cls:'slot-midday' },

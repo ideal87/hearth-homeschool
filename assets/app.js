@@ -219,6 +219,10 @@ function handleAction(action){
     }
     case 'event': eventModal(action.slice(6)); return;
     case 'new-event': eventEditModal(null); return;
+    /* a tap on an empty calendar cell: that child, that day, that hour */
+    case 'new-event-at':
+      eventEditModal(null, { kids:[arg], date:arg2, start:p[3] != null ? +p[3] : null });
+      return;
     case 'ev-edit': closeTopModal(); eventEditModal(arg); return;
     case 'toggle-ev': {
       var evKey = action.slice(10);

@@ -24,7 +24,7 @@ Then open <http://127.0.0.1:8777>.
 | --- | --- | --- |
 | **Routine & chores** | ✅ live | Tick tasks, earn stars, switch morning/midday/evening, move between days, add / edit / delete tasks |
 | **Rewards** | ✅ live | Star banks, the team pot, personal and family reward CRUD, cash in, approve or deny requests |
-| **Calendar** | ✅ live | Add / edit / delete events, weekly repeats or one-offs, day / week / month, mark done, push to tomorrow, three-way series delete |
+| **Calendar** | ✅ live | Add / edit / delete events, weekly repeats or one-offs, day / week / month, tap a square to add, mark done, push to tomorrow, three-way series delete |
 | **Kids** | ✅ live | Add, rename, recolour, remove children; per-child profile and their own login view |
 | **Settings** | ✅ mostly | Star values, school days, approval and carry-over rules, theme, tips, export / import / reset |
 | Today, Lessons, Progress, Records | 🚧 mockup | Watermarked, controls disabled |
@@ -110,6 +110,28 @@ Toggle either from the speaker button on the routine toolbar or Settings → Sou
 effects, where **Play** previews the celebration. Both are skipped automatically when
 the device asks for `prefers-reduced-motion`. The AudioContext is built lazily on the
 first tap, which is what browsers require.
+
+## The calendar
+
+**Week** is the planning view: a row per child, a column per day, **all seven of
+them** - clubs, church and matches happen at the weekend too. The days that are not
+school days (Settings) are shaded rather than hidden.
+
+**Tapping an empty square** starts a new event already set to that child and that
+day, which is most of the work of adding Tuesday's piano lesson. In the day view the
+same tap also carries the hour you tapped.
+
+**Day** is a diary page in the style of Outlook: hours down the left, a column per
+child, and every event a block covering the time it really takes. Events that clash
+share the width; an event on its own spans the column. A red line marks the time
+right now, and the hour column stays put when you scroll sideways.
+
+**Month** is the overview - three entries a day, then a count.
+
+Each entry carries **its own picture**, chosen from about eighty grouped icons -
+a piano, a taekwondo belt, a church, a school bag - while the subject still sets the
+colour that groups the week. An entry with no picture of its own falls back to its
+subject's, so nothing that already existed changed.
 
 ## Deleting a repeating calendar event
 
@@ -243,7 +265,7 @@ huge rows, with their star total, and an animal picture instead of a password.
 index.html            markup shell only; everything renders from JS
 assets/styles.css     tokens, six child palettes, subject colours, touch sizing, watermark
 assets/icons.js       inline SVG icon set
-assets/data.js        date helpers, subjects, slots + static data for the mockup screens
+assets/data.js        date helpers, subjects, slots, task + event icon sets
 assets/i18n.js        the four language dictionaries and the t() helper
 assets/fx.js          WebAudio chimes + star/confetti particles
 assets/sync-core.js   pure diff / Firestore document mapping (no Firebase imports)

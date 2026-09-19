@@ -75,7 +75,7 @@ function eventRow(k, ev, L){
   EV_INDEX[ev.key] = ev;
   return '<button class="evrow ' + s.cls + (done ? ' done' : '') +
     '" data-action="toggle-ev:' + ev.key + '">' +
-    '<span class="task-emoji">' + s.emoji + '</span>' +
+    '<span class="task-emoji">' + evEmoji(ev) + '</span>' +
     '<span class="grow"><span class="evt">' + esc(itemTitle(ev, L)) + '</span></span>' +
     '<span class="when">' + timeLabel(ev.start) + '</span>' +
     checkCircle() +
@@ -432,11 +432,10 @@ function calendarView(){
     grid = monthGrid(c);
   } else if (state.calMode === 'day'){
     label = fmtLong(c);
-    grid = dayList(c);
+    grid = dayGrid(c);
   } else {
     var ws = startOfWeek(c);
-    var days = DB.settings.schoolDays;
-    label = fmtShort(addDays(ws, days[0])) + ' - ' + fmtShort(addDays(ws, days[days.length - 1]));
+    label = fmtShort(ws) + ' - ' + fmtShort(addDays(ws, 6));   /* Monday to Sunday */
     grid = weekLanes(ws);
   }
 
@@ -457,17 +456,20 @@ function calendarView(){
                m.charAt(0).toUpperCase() + m.slice(1) + '</button>'; }).join('') + '</div>' +
       '<button class="btn btn-primary" data-action="new-event">' + icon('plus', 'i-sm') + '<span class="hide-sm">Event</span></button>' +
     '</div>' +
-    '<div class="calwrap">' + grid + calLegend() + '</div>';
+    '<div class="calwrap">' + grid + '</div>';
 }
 
+/* The week always shows all seven days - weekend clubs and church belong on
+   it too. School days are the ones set in Settings; the rest are shaded. */
 function weekLanes(ws){
-  var days = DB.settings.schoolDays.slice().sort(function(a, b){ return a - b; });
-  if (!days.length) days = [0, 1, 2, 3, 4];
-  var cols = 'grid-template-columns:130px repeat(' + days.length + ',minmax(150px,1fr))';
+  var days = [0, 1, 2, 3, 4, 5, 6];
+  var school = DB.settings.schoolDays || [];
+  var cols = 'grid-template-columns:112px repeat(7,minmax(108px,1fr))';
   var out = '<div class="laneswrap"><div class="lanes" style="' + cols + '"><div class="lane-hd"></div>';
   days.forEach(function(dayIdx){
     var d = addDays(ws, dayIdx);
-    out += '<div class="lane-hd' + (sameDay(d, TODAY) ? ' today' : '') + '">' +
+    out += '<div class="lane-hd' + (sameDay(d, TODAY) ? ' today' : '') +
+           (school.indexOf(dayIdx) > -1 ? '' : ' off') + '">' +
            DAY_ABBR[dayIdx] + ' ' + d.getDate() + '</div>';
   });
   visibleKids().forEach(function(k){
@@ -476,37 +478,114 @@ function weekLanes(ws){
     days.forEach(function(dayIdx){
       var d2 = addDays(ws, dayIdx);
       var evs = eventsOn(d2).filter(function(e){ return e.kids.indexOf(k.id) > -1; });
-      out += '<div class="lane-cell">' + evs.map(function(e){
-        EV_INDEX[e.key] = e;
-        var s = subj(e.sk);
-        return '<button class="pill ' + s.cls + (isEventDone(e.key) ? ' done' : '') +
-          '" data-action="event:' + e.key + '">' +
-          '<span class="pt">' + s.emoji + ' ' + esc(e.title) + '</span>' +
-          '<span class="pm">' + timeLabel(e.start) + '</span></button>';
-      }).join('') + '</div>';
+      /* tapping the empty part of a cell starts an event for this child on
+         this day - the commonest thing a parent wants to do here */
+      out += '<div class="lane-cell' + (school.indexOf(dayIdx) > -1 ? '' : ' off') +
+        '" role="button" tabindex="0" title="Add an event for ' + esc(k.name) + '"' +
+        ' data-action="new-event-at:' + k.id + ':' + ymd(d2) + '">' +
+        evs.map(function(e){
+          EV_INDEX[e.key] = e;
+          var s = subj(e.sk);
+          return '<button class="pill ' + s.cls + (isEventDone(e.key) ? ' done' : '') +
+            '" data-action="event:' + e.key + '">' +
+            '<span class="pt">' + evEmoji(e) + ' ' + esc(e.title) + '</span>' +
+            '<span class="pm">' + timeLabel(e.start) + '</span></button>';
+        }).join('') +
+        '<span class="cell-add">' + icon('plus', 'i-sm') + '</span>' +
+      '</div>';
     });
   });
   return out + '</div></div>';
 }
 
-function dayList(dt){
-  var out = '';
-  visibleKids().forEach(function(k){
-    var evs = eventsOn(dt).filter(function(e){ return e.kids.indexOf(k.id) > -1; });
-    out += '<div class="lane-name ' + k.color + '" style="border-bottom:0"><span style="font-size:26px">' + k.emoji + '</span>' +
-           '<div class="grow"><div class="bold">' + esc(k.name) + '</div>' +
-           '<div class="tiny faint">' + evs.length + ' scheduled</div></div></div>' +
-           '<div class="list">' + (evs.length ? evs.map(function(e){
-             EV_INDEX[e.key] = e;
-             var s = subj(e.sk);
-             return '<div class="li click ' + s.cls + '" data-action="event:' + e.key + '">' +
-               '<span class="task-emoji">' + s.emoji + '</span>' +
-               '<span class="li-time">' + timeLabel(e.start) + '</span>' +
-               '<div class="grow bold">' + esc(e.title) + '</div>' +
-               '<span class="tiny faint">' + durLabel(e.dur) + '</span></div>';
-           }).join('') : emptyRow('Nothing scheduled.')) + '</div>';
+/* Events that clash share the width, like a diary. Each one takes the first
+   lane that is free; only the events in the same run of overlaps are narrowed,
+   so a lesson on its own still spans the whole column. */
+function layoutDay(evs){
+  var out = [], group = [], lanes = [], groupEnd = -1;
+  function flush(){
+    var n = lanes.length || 1;
+    group.forEach(function(p){ p.lanes = n; out.push(p); });
+    group = []; lanes = []; groupEnd = -1;
+  }
+  evs.slice().sort(function(a, b){ return a.start - b.start || b.dur - a.dur; })
+    .forEach(function(e){
+      if (group.length && e.start >= groupEnd) flush();
+      var at = -1;
+      for (var i = 0; i < lanes.length; i++){ if (lanes[i] <= e.start){ at = i; break; } }
+      if (at === -1){ at = lanes.length; lanes.push(0); }
+      lanes[at] = e.start + e.dur;
+      groupEnd = Math.max(groupEnd, e.start + e.dur);
+      group.push({ ev:e, lane:at });
+    });
+  flush();
+  return out;
+}
+
+var DAY_HOUR_PX = 64;      /* one hour of the day grid; matches --dayhour in the css */
+
+/* The day, laid out like a diary: hours down the left, a column per child,
+   and every event a block covering the time it actually takes. */
+function dayGrid(dt){
+  var kids = visibleKids();
+  if (!kids.length) return '<div class="card-body faint">No children match this filter.</div>';
+
+  var byKid = {}, earliest = 8 * 60, latest = 17 * 60;
+  kids.forEach(function(k){
+    byKid[k.id] = eventsOn(dt).filter(function(e){ return e.kids.indexOf(k.id) > -1; });
+    byKid[k.id].forEach(function(e){
+      EV_INDEX[e.key] = e;
+      earliest = Math.min(earliest, e.start);
+      latest = Math.max(latest, e.start + e.dur);
+    });
   });
-  return out || '<div class="card-body faint">No children match this filter.</div>';
+  var from = Math.max(0, Math.floor(earliest / 60) * 60);
+  var to   = Math.min(24 * 60, Math.ceil(latest / 60) * 60);
+  if (to <= from) to = Math.min(24 * 60, from + 60);
+
+  var hours = [];
+  for (var m = from; m < to; m += 60) hours.push(m);
+  var ymdStr = ymd(dt);
+  var isToday = sameDay(dt, TODAY);
+  var nowTop = isToday ? (minutesNow() - from) / 60 * DAY_HOUR_PX : -1;
+
+  var out = '<div class="dayviewwrap"><div class="dayview" style="grid-template-columns:76px repeat(' +
+    kids.length + ',minmax(150px,1fr))">' +
+    '<div class="dayhead corner">' + (isToday ? 'Today' : DAY_FULL[monIdx(dt)].slice(0, 3)) + '</div>' +
+    kids.map(function(k){
+      var n = byKid[k.id].length;
+      return '<div class="dayhead ' + k.color + '"><span style="font-size:22px">' + k.emoji + '</span>' +
+        '<span class="grow"><span class="bold">' + esc(k.name) + '</span>' +
+        '<span class="tiny faint" style="display:block">' + (n ? n + ' scheduled' : 'nothing on') + '</span></span></div>';
+    }).join('') +
+    '<div class="daygutter">' + hours.map(function(h){
+      return '<div class="hourlab"><span>' + timeLabel(h) + '</span></div>'; }).join('') + '</div>' +
+    kids.map(function(k){
+      var blocks = layoutDay(byKid[k.id]).map(function(p){
+        var e = p.ev, s = subj(e.sk), done = isEventDone(e.key);
+        var top = (e.start - from) / 60 * DAY_HOUR_PX;
+        var h = Math.max(e.dur / 60 * DAY_HOUR_PX - 4, 26);
+        var w = 100 / p.lanes;
+        return '<button class="dayev ' + s.cls + (done ? ' done' : '') + '" data-action="event:' + e.key + '" ' +
+          'style="top:' + Math.round(top) + 'px;height:' + Math.round(h) + 'px;' +
+          'left:calc(' + (w * p.lane) + '% + 3px);width:calc(' + w + '% - 6px)">' +
+          '<span class="de-t">' + evEmoji(e) + ' ' + esc(e.title) + '</span>' +
+          '<span class="de-m">' + timeLabel(e.start) + ' - ' + timeLabel(e.start + e.dur) + '</span>' +
+        '</button>';
+      }).join('');
+      return '<div class="daycol ' + k.color + '">' +
+        hours.map(function(h){
+          return '<div class="dayslot" role="button" tabindex="0" ' +
+            'title="Add an event at ' + timeLabel(h) + '" ' +
+            'data-action="new-event-at:' + k.id + ':' + ymdStr + ':' + h + '"></div>';
+        }).join('') +
+        blocks +
+        (nowTop >= 0 && nowTop <= hours.length * DAY_HOUR_PX
+          ? '<div class="nowline" style="top:' + Math.round(nowTop) + 'px"></div>' : '') +
+      '</div>';
+    }).join('') +
+  '</div></div>';
+  return out;
 }
 
 function monthGrid(cursor){
@@ -522,18 +601,12 @@ function monthGrid(cursor){
            '<span class="md">' + d.getDate() + '</span>' +
            evs.slice(0, 3).map(function(e){
              var s = subj(e.sk);
-             return '<span class="mp ' + s.cls + '">' + s.emoji + ' ' + esc(e.title) + '</span>';
+             return '<span class="mp ' + s.cls + '">' + evEmoji(e) + ' ' + esc(e.title) + '</span>';
            }).join('') +
            (evs.length > 3 ? '<span class="more">+' + (evs.length - 3) + '</span>' : '') +
            '</button>';
   }
   return out + '</div>';
-}
-function calLegend(){
-  return '<div class="legend">' + Object.keys(SUBJECTS).map(function(key){
-    var s = SUBJECTS[key];
-    return '<span class="row ' + s.cls + '"><span class="dot-c"></span>' + s.emoji + ' ' + s.name + '</span>';
-  }).join('') + '</div>';
 }
 
 /* ------------------------------------------------------------------ */
@@ -640,7 +713,8 @@ function settingsView(){
               DAY_ABBR.map(function(d, i){
                 return '<button class="chip' + (s.schoolDays.indexOf(i) > -1 ? ' on' : '') +
                        '" data-action="school-day:' + i + '">' + d + '</button>'; }).join('') +
-            '</div><div class="hint">Controls the columns in the calendar week view.</div></div>' +
+            '</div><div class="hint">The week view always shows all seven days; the days you do not ' +
+            'pick are shaded, and they are what a new repeating event starts with.</div></div>' +
           '</div></section>' +
 
         '<section class="card"><div class="card-head"><div class="card-title">💾 Your data</div>' + liveDot() + '</div>' +

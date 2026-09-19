@@ -529,7 +529,7 @@ function eventsOn(dateObj, ignoreFilter){
     if (DB.exceptions[e.id] && DB.exceptions[e.id].indexOf(key) > -1) return;
     out.push({
       id:e.id, key:e.id + '|' + key, title:e.title, titles:e.titles, sk:e.sk, kids:e.kids,
-      start:e.start, dur:e.dur, date:dateObj, ymd:key, recurring:!e.date
+      emoji:e.emoji, start:e.start, dur:e.dur, date:dateObj, ymd:key, recurring:!e.date
     });
   });
   out = out.filter(function(e){ return ignoreFilter || passesFilter(e); });

@@ -134,11 +134,13 @@ var TOURS = {
   ],
   calendar: [
     { sel:'.lanes', emoji:'🎨', title:'Rows are children, colours are subjects',
-      body:'Maths blue, reading red, science green. You read the shape of the week without reading a word. Which weekday columns appear is set in Settings.' },
+      body:'Maths blue, reading red, science green - you read the shape of the week without reading a word. All seven days are here, because clubs and church happen at the weekend too; the days you did not pick as school days are simply shaded.' },
+    { sel:'.lane-cell', emoji:'👆', title:'Tap a square to fill it',
+      body:'Tapping an empty square starts a new event already set to that child and that day - so adding Tuesday&rsquo;s piano lesson is two taps and a name.' },
     { sel:'.cal-toolbar .seg', emoji:'🔍', title:'Day, week or month',
-      body:'Week is the planning view, day breaks it out per child, month spots co-op weeks and trips.' },
+      body:'Week is the planning view. <b>Day</b> is a diary page: hours down the side, a column per child, every event a block covering the time it really takes. Month spots co-op weeks and trips.' },
     { sel:'[data-action="new-event"]', emoji:'➕', title:'Add a real event',
-      body:'Pick who it is for, a subject colour, a time, and whether it repeats weekly or happens once.' }
+      body:'Give it a picture - a piano, a taekwondo belt, a church - then a colour, a time, and whether it repeats weekly or happens once.' }
   ],
   kids: [
     { sel:'.card.tint', emoji:'👧', title:'A profile per child',

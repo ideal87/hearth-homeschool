@@ -676,7 +676,7 @@ body.rail-hidden .app{grid-template-columns:minmax(0,1fr)}
 .cal-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
 .cal-date{font-size:19px;font-weight:720;min-width:190px}
 .calwrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow)}
-.lanes{display:grid;grid-template-columns:130px repeat(5,minmax(150px,1fr));min-width:880px}
+.lanes{display:grid;grid-template-columns:112px repeat(7,minmax(108px,1fr));min-width:868px}
 .laneswrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .lane-hd{
   padding:13px 8px;border-bottom:2px solid var(--line);border-left:1.5px solid var(--line);
@@ -689,8 +689,21 @@ body.rail-hidden .app{grid-template-columns:minmax(0,1fr)}
   background:var(--cs);
 }
 .lane-cell{
-  border-left:1.5px solid var(--line);border-bottom:1.5px solid var(--line);
-  padding:8px;display:flex;flex-direction:column;gap:7px;min-height:118px;
+  border-left:1px solid var(--line);border-bottom:1px solid var(--line);
+  padding:8px;display:flex;flex-direction:column;gap:7px;min-height:112px;
+  cursor:pointer;position:relative;transition:background .16s;
+}
+.lane-hd.off,.lane-cell.off{background:var(--panel-2)}
+/* the faint + that says an empty cell is a button */
+.cell-add{
+  margin-top:auto;align-self:flex-end;color:var(--ink-3);opacity:0;transition:opacity .16s;
+  display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--panel-3);
+}
+.lane-cell:active{background:var(--accent-soft)}
+.lane-cell:active .cell-add{opacity:1}
+@media (hover:hover){
+  .lane-cell:hover{background:var(--accent-soft)}
+  .lane-cell:hover .cell-add{opacity:1}
 }
 .pill{
   border-radius:12px;padding:8px 10px;font-size:13px;font-weight:700;
@@ -720,7 +733,54 @@ body.rail-hidden .app{grid-template-columns:minmax(0,1fr)}
 .mcell .more{font-size:12px;color:var(--ink-3);font-weight:650}
 .cal-hd7{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-bottom:2px solid var(--line)}
 .cal-hd7 div{padding:11px 4px;text-align:center;font-size:12.5px;font-weight:720;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em}
-.legend{display:flex;gap:16px;flex-wrap:wrap;padding:14px 18px;border-top:1.5px solid var(--line);background:var(--panel-2);font-size:13.5px;color:var(--ink-2)}
+
+/* ---------- day view (a diary page, one column per child) ---------- */
+.dayviewwrap{overflow:auto;-webkit-overflow-scrolling:touch;max-height:calc(100vh - 230px)}
+.dayview{display:grid;min-width:min(100%,520px);--dayhour:64px}
+.dayhead{
+  position:sticky;top:0;z-index:3;background:var(--panel);
+  border-bottom:1.5px solid var(--line);border-left:1px solid var(--line);
+  padding:10px 12px;display:flex;align-items:center;gap:9px;min-height:58px;
+}
+.dayhead.corner{
+  border-left:0;left:0;z-index:4;justify-content:center;
+  font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);
+}
+.daygutter{border-right:1px solid var(--line);background:var(--panel-2);position:sticky;left:0;z-index:2}
+.hourlab{
+  height:var(--dayhour);position:relative;
+  font-size:12px;font-weight:750;color:var(--ink-3);text-align:right;padding-right:9px;
+}
+.hourlab span{position:relative;top:-8px}
+.hourlab:first-child span{top:0}
+.daycol{position:relative;border-left:1px solid var(--line)}
+.dayslot{
+  height:var(--dayhour);border-bottom:1px solid var(--line);cursor:pointer;
+  transition:background .16s;
+}
+.dayslot:nth-child(odd){background:color-mix(in srgb,var(--cs) 30%,transparent)}
+.dayslot:active{background:var(--accent-soft)}
+@media (hover:hover){ .dayslot:hover{background:var(--accent-soft)} }
+.dayev{
+  position:absolute;overflow:hidden;text-align:left;cursor:pointer;
+  background:var(--cs);color:var(--c);border:0;border-left:4px solid var(--c);
+  border-radius:10px;padding:5px 8px;box-shadow:var(--shadow);
+  display:flex;flex-direction:column;justify-content:flex-start;gap:1px;
+  transition:transform .16s var(--ease),box-shadow .16s;
+}
+.dayev:active{transform:scale(.99);box-shadow:none}
+@media (hover:hover){ .dayev:hover{box-shadow:0 10px 20px -12px var(--c)} }
+.dayev .de-t{font-size:13.5px;font-weight:800;color:var(--ink);line-height:1.2;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dayev .de-m{font-size:11.5px;font-weight:700;opacity:.9;white-space:nowrap}
+.dayev.done{opacity:.55}
+.dayev.done .de-t{text-decoration:line-through}
+.nowline{
+  position:absolute;left:0;right:0;height:2px;background:var(--bad);z-index:2;pointer-events:none;
+}
+.nowline::before{
+  content:"";position:absolute;left:-5px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--bad);
+}
 
 /* ---------- lessons ---------- */
 .subjcard{border:2px solid var(--cb,var(--line));border-radius:var(--r-lg);background:var(--panel);overflow:hidden}

@@ -251,7 +251,7 @@ function eventEditModal(eventId, prefill){
   var e = eventId ? eventById(eventId) : null;
   var isNew = !e;
   if (isNew){
-    e = { title:'', sk:'circle', kids:kidIds(), start:540, dur:30,
+    e = { title:'', sk:'circle', kids:kidIds(), start:540, dur:60,
           days:DB.settings.schoolDays.slice(), date:null };
     /* started from a cell on the calendar: that child, that day, that time */
     if (prefill){

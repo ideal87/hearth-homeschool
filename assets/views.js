@@ -488,8 +488,9 @@ function weekLanes(ws){
           var s = subj(e.sk);
           return '<button class="pill ' + s.cls + (isEventDone(e.key) ? ' done' : '') +
             '" data-action="event:' + e.key + '">' +
-            '<span class="pt">' + evEmoji(e) + ' ' + esc(e.title) + '</span>' +
-            '<span class="pm">' + timeLabel(e.start) + '</span></button>';
+            '<span class="pill-em">' + evEmoji(e) + '</span>' +
+            '<span class="grow"><span class="pt">' + esc(e.title) + '</span>' +
+            '<span class="pm">' + timeLabel(e.start) + '</span></span></button>';
         }).join('') +
         '<span class="cell-add">' + icon('plus', 'i-sm') + '</span>' +
       '</div>';
@@ -566,11 +567,14 @@ function dayGrid(dt){
         var top = (e.start - from) / 60 * DAY_HOUR_PX;
         var h = Math.max(e.dur / 60 * DAY_HOUR_PX - 4, 26);
         var w = 100 / p.lanes;
-        return '<button class="dayev ' + s.cls + (done ? ' done' : '') + '" data-action="event:' + e.key + '" ' +
+        var tight = e.dur < 45 || p.lanes > 2;      /* no room for a big picture */
+        return '<button class="dayev ' + s.cls + (done ? ' done' : '') + (tight ? ' tight' : '') +
+          '" data-action="event:' + e.key + '" ' +
           'style="top:' + Math.round(top) + 'px;height:' + Math.round(h) + 'px;' +
           'left:calc(' + (w * p.lane) + '% + 3px);width:calc(' + w + '% - 6px)">' +
-          '<span class="de-t">' + evEmoji(e) + ' ' + esc(e.title) + '</span>' +
-          '<span class="de-m">' + timeLabel(e.start) + ' - ' + timeLabel(e.start + e.dur) + '</span>' +
+          '<span class="de-em">' + evEmoji(e) + '</span>' +
+          '<span class="grow"><span class="de-t">' + esc(e.title) + '</span>' +
+          '<span class="de-m">' + timeLabel(e.start) + ' - ' + timeLabel(e.start + e.dur) + '</span></span>' +
         '</button>';
       }).join('');
       return '<div class="daycol ' + k.color + '">' +

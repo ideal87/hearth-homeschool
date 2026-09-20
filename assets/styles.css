@@ -706,14 +706,22 @@ body.rail-hidden .app{grid-template-columns:minmax(0,1fr)}
   .lane-cell:hover .cell-add{opacity:1}
 }
 .pill{
-  border-radius:12px;padding:8px 10px;font-size:13px;font-weight:700;
+  border-radius:12px;padding:7px 9px;font-size:13px;font-weight:700;
   background:var(--cs);color:var(--c);border:0;border-left:4px solid var(--c);
-  cursor:pointer;text-align:left;display:block;width:100%;min-height:44px;
+  cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px;
+  width:100%;min-height:48px;
   transition:transform .16s var(--ease),box-shadow .16s;
 }
+/* the picture reads at the same size as the child's own face beside it */
+.pill-em{font-size:26px;line-height:1;flex:0 0 auto}
 .pill:active{transform:scale(.985)}
 @media (hover:hover){ .pill:hover{box-shadow:0 8px 16px -10px var(--c)} }
-.pill .pt{display:block;font-weight:720;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* with a big picture beside it the title needs two lines, not an ellipsis */
+.pill .pt{
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  font-weight:750;color:var(--ink);font-size:12.5px;line-height:1.18;
+  overflow-wrap:anywhere;
+}
 .pill .pm{display:block;font-size:11.5px;opacity:.9}
 .pill.done{opacity:.5}
 .pill.done .pt{text-decoration:line-through}
@@ -765,13 +773,22 @@ body.rail-hidden .app{grid-template-columns:minmax(0,1fr)}
   position:absolute;overflow:hidden;text-align:left;cursor:pointer;
   background:var(--cs);color:var(--c);border:0;border-left:4px solid var(--c);
   border-radius:10px;padding:5px 8px;box-shadow:var(--shadow);
-  display:flex;flex-direction:column;justify-content:flex-start;gap:1px;
+  display:flex;align-items:center;gap:8px;
   transition:transform .16s var(--ease),box-shadow .16s;
 }
+.de-em{font-size:26px;line-height:1;flex:0 0 auto}
+/* half-hour slots, or three events side by side, cannot carry a big one */
+.dayev.tight{align-items:center;padding:3px 7px;gap:6px}
+.dayev.tight .de-em{font-size:17px}
+.dayev.tight .de-m{display:none}
 .dayev:active{transform:scale(.99);box-shadow:none}
 @media (hover:hover){ .dayev:hover{box-shadow:0 10px 20px -12px var(--c)} }
-.dayev .de-t{font-size:13.5px;font-weight:800;color:var(--ink);line-height:1.2;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dayev .de-t{
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  font-size:13.5px;font-weight:800;color:var(--ink);line-height:1.2;
+  overflow-wrap:anywhere;
+}
+.dayev.tight .de-t{-webkit-line-clamp:1;font-size:12.5px}
 .dayev .de-m{font-size:11.5px;font-weight:700;opacity:.9;white-space:nowrap}
 .dayev.done{opacity:.55}
 .dayev.done .de-t{text-decoration:line-through}

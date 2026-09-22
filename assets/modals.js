@@ -664,14 +664,14 @@ function rewardEditModal(rewardId, asTeam){
         '</div>' +
         '<div class="hint">A child pays from their own stars; a family reward comes out of the team pot ' +
         'that the chores fill.</div></div>' +
-      '<div class="field"><label>Picture</label>' +
-        '<div class="emojiscroll">' + emojiPickerGrouped(REWARD_EMOJI_GROUPS, r.emoji, 'emoji') + '</div></div>' +
       '<div class="f2">' +
         '<div class="field"><label>Costs (stars)</label>' +
           '<input class="inp" id="rw-cost" type="number" min="1" value="' + r.cost + '"></div>' +
         '<div class="field"><label>Small print</label>' +
           '<input class="inp" id="rw-note" value="' + esc(r.note || '') + '" placeholder="One weekend night"></div>' +
-      '</div>',
+      '</div>' +
+      '<div class="field mb0"><label>Picture</label>' +
+        '<div class="emojiscroll">' + emojiPickerGrouped(REWARD_EMOJI_GROUPS, r.emoji, 'emoji') + '</div></div>',
     foot:
       (isNew ? '' : '<button class="btn btn-danger left" data-action="reward-del:' + r.id + '">' + icon('trash', 'i-sm') + 'Delete</button>') +
       '<button class="btn" data-close="1">Cancel</button>' +

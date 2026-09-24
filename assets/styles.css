@@ -167,7 +167,7 @@ a{color:inherit;text-decoration:none}
 .grow{flex:1 1 auto;min-width:0}
 .stack{display:flex;flex-direction:column;gap:16px}
 .truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.hidden{display:none !important}
+.hidden,[hidden]{display:none !important}
 .mb0{margin-bottom:0}
 .center{text-align:center}
 
@@ -252,6 +252,7 @@ body.rail-hidden .app{grid-template-columns:minmax(0,1fr)}
 }
 .familybar::-webkit-scrollbar{display:none}
 .familybar .chip{flex:0 0 auto;min-height:40px;padding:0 13px}
+.familybar .chip-face{width:44px;padding:0;justify-content:center;font-size:20px}
 .content{padding:20px;width:100%;max-width:1500px}
 
 /* ---------- buttons ---------- */
@@ -377,12 +378,14 @@ body.rail-hidden .app{grid-template-columns:minmax(0,1fr)}
 
 /* ---------- ROUTINE + CHORE BOARD (the main screen) ---------- */
 .board{
-  --n:3;                 /* how many children are on screen, set inline */
+  --n:3;                 /* how many people are on screen, set inline */
+  --cols:3;              /* ...and never fewer than three slots, set inline too */
   --gap:18px;
   display:grid;grid-auto-flow:column;
-  /* share the width between them, but never squeeze below a readable column */
-  grid-auto-columns:minmax(
-    clamp(248px, calc((100% - (var(--n) - 1) * var(--gap)) / var(--n)), 470px), 1fr);
+  /* One, two or three people each get a third, so a single child's column is
+     the same size it is when all three children show. Four or five share the
+     row between them - down to a readable floor, then it scrolls sideways. */
+  grid-auto-columns:max(168px, calc((100% - (var(--cols) - 1) * var(--gap)) / var(--cols)));
   gap:var(--gap);overflow-x:auto;padding:4px 4px 14px;
   scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;
 }
@@ -540,10 +543,26 @@ body.rail-hidden .app{grid-template-columns:minmax(0,1fr)}
 }
 .kidcol-foot .foot-week{flex-basis:100%;font-size:12.5px;opacity:.85}
 
+/* ring | name | face, with the chips under the name. Narrow columns fold the
+   chips onto a row of their own - see the container queries below. */
+.kidcol-head{
+  padding:20px 20px 14px;display:grid;align-items:center;column-gap:14px;row-gap:6px;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  grid-template-areas:"ring name face" "ring chips face";
+}
+.kidcol-head > .ringwrap{grid-area:ring}
+.kidcol-name{
+  grid-area:name;align-self:end;min-width:0;
+  font-size:25px;font-weight:900;letter-spacing:-.035em;color:var(--c);line-height:1.1;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.kidcol-face{grid-area:face;font-size:34px;line-height:1}
+.kidcol-chips{grid-area:chips;align-self:start;display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+
 /* A narrow column has to spend less on chrome or the title has no room left.
    Browsers without container queries simply keep the roomier sizing. */
 @container (max-width:340px){
-  .kidcol-head{padding:16px 14px 12px;gap:11px}
+  .kidcol-head{padding:16px 14px 12px;column-gap:11px}
   .ring{width:54px;height:54px}
   .kidcol-name{font-size:21px}
   .slotbar{padding:0 14px 14px;gap:8px}
@@ -571,8 +590,63 @@ body.rail-hidden .app{grid-template-columns:minmax(0,1fr)}
   .slotlabel{padding:8px 13px}
   .kidcol-head{padding:14px 12px 10px}
 }
-.kidcol-head{padding:20px 20px 14px;display:flex;align-items:center;gap:14px}
-.kidcol-name{font-size:25px;font-weight:900;letter-spacing:-.035em;color:var(--c);line-height:1.1}
+/* Four people (~225px a column on a 10in tablet) or five (~180px). The header
+   folds, rows put their stars under the title instead of beside it, and the
+   chrome gets out of the way - the tap targets are still whole rows. */
+@container (max-width:250px){
+  .kidcol-head{
+    padding:12px 10px 8px;column-gap:8px;row-gap:7px;
+    grid-template-areas:"ring name face" "chips chips chips";
+  }
+  .ring{width:44px;height:44px}
+  .ringwrap .rlabel{font-size:11.5px}
+  .kidcol-name{font-size:18px;align-self:center}
+  .kidcol-face{font-size:24px}
+  .kidcol-chips{gap:4px}
+  .kidcol-chips .streakchip,.kidcol-chips .star,.kidcol-chips .langchip{
+    padding:2px 7px;font-size:11px;min-height:0;gap:3px;
+  }
+  .slotbar{padding:0 10px 10px;gap:5px}
+  .slotbtn{min-height:48px;border-radius:15px;font-size:17px}
+  .slotbtn small{font-size:9px;letter-spacing:0}
+  .slotlabel{padding:8px 12px;font-size:10.5px;letter-spacing:.04em;gap:6px}
+  .slotlabel .teamtag{display:none}
+  .tasklist{padding:0 8px 8px;gap:6px}
+  .task,.rewardrow,.evrow{
+    display:grid;grid-template-columns:auto minmax(0,1fr) auto;
+    grid-template-areas:"em title ck" "em meta ck";
+    column-gap:7px;row-gap:3px;padding:8px;min-height:58px;border-radius:16px;
+  }
+  .task > .task-emoji,.rewardrow > .task-emoji,.evrow > .task-emoji{
+    grid-area:em;width:32px;height:32px;font-size:18px;border-radius:11px;
+  }
+  .task > .grow,.rewardrow > .grow,.evrow > .grow{grid-area:title;align-self:end}
+  .task > .star,.rewardrow > .star,.evrow > .when{
+    grid-area:meta;justify-self:start;align-self:start;padding:1px 7px;font-size:11px;gap:3px;
+  }
+  .task > .check,.rewardrow > .check,.evrow > .check{grid-area:ck;width:28px;height:28px;border-width:2px}
+  .check .i{width:16px;height:16px}
+  .task-title,.evrow .evt{font-size:13.5px;line-height:1.2}
+  .celebrate,.emptyslot,.closedday{margin:0 8px 8px;padding:16px 10px}
+  .celebrate .em{font-size:36px}
+  .kidcol-foot{padding:10px 12px;font-size:12px;gap:2px 8px}
+  .kidcol-foot .foot-week{font-size:11px}
+}
+@container (max-width:205px){
+  .kidcol-head{padding:10px 8px 6px;column-gap:6px}
+  .ring{width:40px;height:40px}
+  .ringwrap .rlabel{font-size:11px}
+  .kidcol-name{font-size:16.5px}
+  .kidcol-face{font-size:21px}
+  .slotbar{padding:0 8px 8px;gap:4px}
+  .slotbtn{min-height:44px;font-size:15px;border-radius:13px}
+  .slotlabel{padding:7px 10px}
+  .tasklist{padding:0 6px 6px}
+  .task,.rewardrow,.evrow{padding:7px;column-gap:6px}
+  .task > .task-emoji,.rewardrow > .task-emoji,.evrow > .task-emoji{width:28px;height:28px;font-size:16px;border-radius:10px}
+  .task-title,.evrow .evt{font-size:13px}
+  .kidcol-foot{padding:9px 10px;font-size:11.5px}
+}
 
 /* ---------- team stars ---------- */
 .teambar{
@@ -628,7 +702,15 @@ body.rail-hidden .app{grid-template-columns:minmax(0,1fr)}
 .rewardcard .em{font-size:44px;line-height:1;filter:drop-shadow(0 6px 10px rgba(20,26,40,.16))}
 .rewardcard.locked{opacity:.62}
 .rewardcard.locked .em{filter:grayscale(1)}
+/* a third each for up to three people, a fifth each for five */
+.bankgrid{
+  --cols:3;display:grid;gap:16px;margin-bottom:20px;
+  grid-template-columns:repeat(var(--cols),minmax(0,1fr));
+}
+@media (max-width:900px){ .bankgrid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))} }
+@media (max-width:520px){ .bankgrid{grid-template-columns:minmax(0,1fr)} }
 .bankcard{
+  container-type:inline-size;
   border-radius:var(--r-xl);border:1.5px solid var(--cb);padding:18px;
   background:linear-gradient(160deg,var(--cs),var(--panel));
   background:
@@ -637,6 +719,10 @@ body.rail-hidden .app{grid-template-columns:minmax(0,1fr)}
   box-shadow:0 24px 44px -34px var(--c), var(--shadow);
 }
 .bignum{font-size:44px;font-weight:900;letter-spacing:-.045em;line-height:1;color:var(--c)}
+@container (max-width:200px){
+  .bankcard .bignum{font-size:32px}
+  .bankcard .lg{font-size:16px}
+}
 .badgegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px}
 .badgetile{
   border-radius:var(--r);border:1px solid var(--line);background:var(--panel-2);
@@ -694,6 +780,8 @@ body.rail-hidden .app{grid-template-columns:minmax(0,1fr)}
   cursor:pointer;position:relative;transition:background .16s;
 }
 .lane-hd.off,.lane-cell.off{background:var(--panel-2)}
+.lanes.many .lane-cell{min-height:92px}
+.lanes.many .lane-name{padding:10px 12px}
 /* the faint + that says an empty cell is a button */
 .cell-add{
   margin-top:auto;align-self:flex-end;color:var(--ink-3);opacity:0;transition:opacity .16s;
@@ -744,7 +832,7 @@ body.rail-hidden .app{grid-template-columns:minmax(0,1fr)}
 
 /* ---------- day view (a diary page, one column per child) ---------- */
 .dayviewwrap{overflow:auto;-webkit-overflow-scrolling:touch;max-height:calc(100vh - 230px)}
-.dayview{display:grid;min-width:min(100%,520px);--dayhour:64px}
+.dayview{display:grid;width:100%;min-width:min(100%,520px);--dayhour:64px}
 .dayhead{
   position:sticky;top:0;z-index:3;background:var(--panel);
   border-bottom:1.5px solid var(--line);border-left:1px solid var(--line);

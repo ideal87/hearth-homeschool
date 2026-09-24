@@ -99,9 +99,9 @@ function closedColumn(k, dt, L, evs){
   return '<section class="kidcol closed ' + k.color + '" lang="' + L + '">' +
     '<div class="kidcol-head">' +
       progressRing(day.done, day.total) +
-      '<div class="grow"><div class="kidcol-name">' + esc(k.name) + '</div>' +
-        '<div class="tiny faint">' + fmtLongLoc(dt, L) + '</div></div>' +
-      '<span style="font-size:34px;line-height:1">' + k.emoji + '</span>' +
+      '<div class="kidcol-name">' + esc(k.name) + '</div>' +
+      '<span class="kidcol-face">' + k.emoji + '</span>' +
+      '<div class="kidcol-chips tiny faint">' + fmtLongLoc(dt, L) + '</div>' +
     '</div>' +
     '<div class="closedday">' +
       '<span class="em">📕</span>' +
@@ -148,15 +148,14 @@ function kidColumn(k, dt){
   return '<section class="kidcol ' + k.color + '" lang="' + L + '">' +
     '<div class="kidcol-head">' +
       progressRing(day.done, day.total) +
-      '<div class="grow"><div class="kidcol-name">' + esc(k.name) + '</div>' +
-        '<div class="row wrap" style="gap:6px;margin-top:5px">' +
-          '<span class="streakchip">🔥 ' + (k.streak || 0) + '</span>' +
-          starPill(starBank(k.id)) +
-          '<button class="langchip" data-action="kid-lang:' + k.id + '" ' +
-            'aria-label="' + t('language', L) + '">' + langOf(L).flag + ' ' + L.toUpperCase() + '</button>' +
-        '</div>' +
+      '<div class="kidcol-name">' + esc(k.name) + '</div>' +
+      '<span class="kidcol-face">' + k.emoji + '</span>' +
+      '<div class="kidcol-chips">' +
+        '<span class="streakchip">🔥 ' + (k.streak || 0) + '</span>' +
+        starPill(starBank(k.id)) +
+        '<button class="langchip" data-action="kid-lang:' + k.id + '" ' +
+          'aria-label="' + t('language', L) + '">' + langOf(L).flag + ' ' + L.toUpperCase() + '</button>' +
       '</div>' +
-      '<span style="font-size:34px;line-height:1">' + k.emoji + '</span>' +
     '</div>' +
 
     '<div class="slotbar">' + SLOTS.map(function(s){
@@ -262,7 +261,7 @@ function routineView(){
     '</div>' +
 
     (kids.length
-      ? '<div class="board" style="--n:' + kids.length + '">' +
+      ? '<div class="board" style="--n:' + kids.length + ';--cols:' + Math.max(3, kids.length) + '">' +
         kids.map(function(k){ return kidColumn(k, dt); }).join('') + '</div>'
       : '<div class="card"><div class="card-body faint">No children match this filter.</div></div>');
 }
@@ -274,7 +273,7 @@ function rewardsView(){
   var kids = visibleKids();
   var pending = DB.redemptions.filter(function(r){ return r.status === 'pending'; });
 
-  var banks = '<div class="grid-3" style="margin-bottom:20px">' + kids.map(function(k){
+  var banks = '<div class="bankgrid" style="--cols:' + Math.max(3, kids.length) + '">' + kids.map(function(k){
     var bank = starBank(k.id);
     var next = DB.rewards.filter(function(r){ return !r.team; })
                  .sort(function(a, b){ return a.cost - b.cost; })
@@ -465,7 +464,9 @@ function weekLanes(ws){
   var days = [0, 1, 2, 3, 4, 5, 6];
   var school = DB.settings.schoolDays || [];
   var cols = 'grid-template-columns:112px repeat(7,minmax(108px,1fr))';
-  var out = '<div class="laneswrap"><div class="lanes" style="' + cols + '"><div class="lane-hd"></div>';
+  var many = visibleKids().length > 3;
+  var out = '<div class="laneswrap"><div class="lanes' + (many ? ' many' : '') + '" style="' + cols + '">' +
+    '<div class="lane-hd"></div>';
   days.forEach(function(dayIdx){
     var d = addDays(ws, dayIdx);
     out += '<div class="lane-hd' + (sameDay(d, TODAY) ? ' today' : '') +
@@ -474,7 +475,7 @@ function weekLanes(ws){
   });
   visibleKids().forEach(function(k){
     out += '<div class="lane-name ' + k.color + '"><span style="font-size:26px">' + k.emoji + '</span>' +
-           '<div><div class="bold sm">' + esc(k.name) + '</div><div class="tiny faint">' + esc(k.grade) + '</div></div></div>';
+           '<div><div class="bold sm">' + esc(k.name) + '</div><div class="tiny faint">' + esc(memberSub(k)) + '</div></div></div>';
     days.forEach(function(dayIdx){
       var d2 = addDays(ws, dayIdx);
       var evs = eventsOn(d2).filter(function(e){ return e.kids.indexOf(k.id) > -1; });
@@ -550,8 +551,9 @@ function dayGrid(dt){
   var isToday = sameDay(dt, TODAY);
   var nowTop = isToday ? (minutesNow() - from) / 60 * DAY_HOUR_PX : -1;
 
+  var slots = Math.max(3, kids.length);
   var out = '<div class="dayviewwrap"><div class="dayview" style="grid-template-columns:76px repeat(' +
-    kids.length + ',minmax(150px,1fr))">' +
+    kids.length + ',max(130px, calc((100% - 76px) / ' + slots + ')))">' +
     '<div class="dayhead corner">' + (isToday ? 'Today' : DAY_FULL[monIdx(dt)].slice(0, 3)) + '</div>' +
     kids.map(function(k){
       var n = byKid[k.id].length;
@@ -617,13 +619,15 @@ function monthGrid(cursor){
 /* VIEW: Kids  (LIVE)                                                  */
 /* ------------------------------------------------------------------ */
 function kidsView(){
+  var nParents = DB.kids.filter(isParent).length, nKids = DB.kids.length - nParents;
   return tipBanner('t-kids',
-      'One colour per child, everywhere',
-      'Add, rename, recolour or remove a child and every other live screen follows. ' +
-      'Children are stored in this browser only - nothing leaves the device.') +
+      'One colour per person, everywhere',
+      'Children and parents alike: add, rename, recolour or remove anyone and every other live screen ' +
+      'follows. Parents get a column on the board and a row on the calendar too.') +
 
     '<div class="row" style="margin-bottom:16px">' + liveDot() +
-      '<span class="tiny faint">' + DB.kids.length + ' ' + (DB.kids.length === 1 ? 'child' : 'children') + '</span></div>' +
+      '<span class="tiny faint">' + nKids + ' ' + (nKids === 1 ? 'child' : 'children') +
+      (nParents ? ' &middot; ' + nParents + ' ' + (nParents === 1 ? 'parent' : 'parents') : '') + '</span></div>' +
 
     '<div class="grid-3">' + DB.kids.map(function(k){
       var d = dayProgress(k.id, TODAY);
@@ -632,7 +636,7 @@ function kidsView(){
         '<div class="card-body">' +
           '<div class="row" style="margin-bottom:14px"><span style="font-size:42px;line-height:1">' + k.emoji + '</span>' +
             '<div class="grow"><div class="bold" style="font-size:21px">' + esc(k.name) + '</div>' +
-            '<div class="sm muted">' + esc(k.grade) + (k.age ? ' &middot; age ' + k.age : '') + '</div></div>' +
+            '<div class="sm muted">' + esc(memberSub(k)) + (k.age && !isParent(k) ? ' &middot; age ' + k.age : '') + '</div></div>' +
             starPill(starBank(k.id), true) +
           '</div>' +
           '<div class="row-b sm bold" style="color:var(--c);margin-bottom:7px">' +
@@ -655,8 +659,8 @@ function kidsView(){
       '</div>';
     }).join('') +
     '<button class="ph" style="min-height:250px" data-action="add-kid">' + icon('plus', 'i-lg') +
-      '<div class="bold">Add a child</div>' +
-      '<div class="tiny">Name, colour, and a sign-in animal</div></button>' +
+      '<div class="bold">Add a family member</div>' +
+      '<div class="tiny">A child or a parent - name, colour and a sign-in picture</div></button>' +
     '</div>';
 }
 
@@ -758,7 +762,7 @@ function settingsView(){
               sw(s.effects, 'toggle-set:effects')) +
             settingRow('Try it', 'Plays the celebration and reports what the audio engine is doing',
               '<button class="btn btn-sm btn-gold" data-action="test-fx">Play</button>') +
-            settingRow('Full-width board', 'Hide the left bar to fit more children on screen',
+            settingRow('Full-width board', 'Hide the left bar to give each person&rsquo;s column more room',
               sw(s.railHidden, 'toggle-rail')) +
           '</div>' +
           '<div class="card-foot tiny faint">Both are skipped automatically when the device asks for reduced motion.</div>' +
@@ -908,8 +912,10 @@ function lessonsView(){
 
 function progressView(){
   var kidId = state.progressKid;
-  if (!kid(kidId) && DB.kids.length) kidId = DB.kids[0].id;
+  if (!kid(kidId) || isParent(kid(kidId))) kidId = students().length ? students()[0].id : null;
   var k = kid(kidId);
+  if (!k) return mockBanner('It sketches mastery tracking for each child.') +
+    '<div class="card"><div class="card-body faint">Add a child on the Family page to see this.</div></div>';
   var skills = SKILLS.filter(function(s){ return s.kid === kidId; });
   var bySubject = {};
   skills.forEach(function(s){ (bySubject[s.sk] = bySubject[s.sk] || []).push(s); });
@@ -917,7 +923,7 @@ function progressView(){
 
   return mockBanner('It sketches mastery tracking - Learning / Practising / Got it - in place of grades and a GPA.') +
     '<div class="mock">' +
-    '<div class="seg big" style="margin-bottom:18px">' + DB.kids.map(function(x){
+    '<div class="seg big" style="margin-bottom:18px">' + students().map(function(x){
       return '<button class="' + (kidId === x.id ? 'on' : '') + '" data-action="progress-kid:' + x.id + '">' +
              x.emoji + ' ' + esc(x.name) + '</button>'; }).join('') + '</div>' +
 
@@ -982,7 +988,7 @@ function recordsView(){
     '<div class="grid-4" style="margin-bottom:18px">' +
       statCard({ emoji:'📅', label:'Days logged', value:DAYS_DONE, unit:'/ ' + st.days, bar:DAYS_DONE, barMax:st.days || 1 }) +
       statCard({ emoji:'⏱️', label:'Hours logged', value:HOURS_DONE, unit:'/ ' + (st.hours || '-'), bar:HOURS_DONE, barMax:st.hours || 1, barCls:'ok' }) +
-      statCard({ emoji:'🎒', label:'Children', value:DB.kids.length }) +
+      statCard({ emoji:'🎒', label:'Children', value:students().length }) +
       statCard({ emoji:'🏁', label:'Projected finish', value:fmtShort(addDays(TODAY, 96)) }) +
     '</div>' +
     '<div class="grid-2col">' +
@@ -1010,7 +1016,7 @@ var VIEWS = {
   routine:  { title:'Routine & chores', sub:'Tap to tick, earn stars', icon:'check2', label:'Routine',  render:routineView, live:true },
   rewards:  { title:'Rewards',          sub:'Star bank and store',     icon:'star',   label:'Rewards',  render:rewardsView, live:true },
   calendar: { title:'Calendar',         sub:'Lessons and outings',     icon:'calendar', label:'Calendar', render:calendarView, live:true },
-  kids:     { title:'Kids',             sub:'Profiles and colours',    icon:'users',  label:'Kids',     render:kidsView,    live:true },
+  kids:     { title:'Family',           sub:'Everyone and their colours', icon:'users', label:'Family', render:kidsView,    live:true },
   today:    { title:'Today',            sub:'Mockup',                  icon:'home',   label:'Today',    render:todayView },
   lessons:  { title:'Lessons',          sub:'Mockup',                  icon:'book',   label:'Lessons',  render:lessonsView },
   progress: { title:'Progress',         sub:'Mockup',                  icon:'target', label:'Progress', render:progressView },

@@ -25,7 +25,7 @@ Then open <http://127.0.0.1:8777>.
 | **Routine & chores** | ✅ live | Tick tasks, earn stars, switch morning/midday/evening, move between days, add / edit / delete tasks |
 | **Rewards** | ✅ live | Star banks, the team pot, personal and family reward CRUD, cash in, approve or deny requests |
 | **Calendar** | ✅ live | Add / edit / delete events, weekly repeats or one-offs, day / week / month, tap a square to add, mark done, push to tomorrow, three-way series delete |
-| **Kids** | ✅ live | Add, rename, recolour, remove children; per-child profile and their own login view |
+| **Family** | ✅ live | Add, rename, recolour, remove children and parents; a profile and their own login view each |
 | **Settings** | ✅ mostly | Star values, school days, approval and carry-over rules, theme, tips, export / import / reset |
 | Today, Lessons, Progress, Records | 🚧 mockup | Watermarked, controls disabled |
 
@@ -230,6 +230,27 @@ Worked example: Reading Time is a routine worth 10 for Hannah, 4 for Juan and 3 
 Ian, so ticking it moves three banks. Set the table is a chore worth 5 - whoever
 ticks it, the pot gains 5 and no bank moves at all.
 
+## Parents are family too
+
+The **Family** page (it used to be *Kids*) takes parents as well as children. Pick
+*A parent* in the editor and the grade and age disappear; everything else is the
+same. Mom and Dad get a colour, a column on the board - their chores go into the team
+pot like anyone's - a row on the calendar for their own appointments, and a star bank.
+The school-only mockup screens (Progress, Records) still list only the children.
+
+Parents are stored in the same list as children (`DB.kids`, with `role:'parent'`), so
+nothing already saved or synced needed changing.
+
+**Up to five across.** One, two or three people each get a third of the width, so a
+child shown alone is the same size as when all three children show. Four or five
+share the row instead: on a 10-inch iPad in landscape all five fit side by side
+(about 175px a column with the menu showing, 195px with it hidden), and the columns
+fold their header and put each task's stars under its title to make that work. The
+same rule sizes the calendar's day view and the Rewards bank cards. In portrait the
+board keeps a readable minimum width and swipes sideways; on a phone it is one
+person per screen, as before. With four or more people the filter chips in the top
+bar show just each person's face so they all fit.
+
 ## Kid-friendly touches on the routine board
 
 Rounded columns lit with a wash of each child's colour, a progress ring that answers
@@ -245,7 +266,7 @@ Colours are declared once as custom properties, in three palettes - light, syste
 and forced dark - so the whole app re-themes from a handful of lines. `color-mix()` is
 only ever an enhancement; each use has a plain fallback for older iPads.
 
-**Their view** (Kids → Their view) is the child-facing screen: only their tasks, in
+**Their view** (Family → Their view) is the child-facing screen: only their tasks, in
 huge rows, with their star total, and an animal picture instead of a password.
 
 ## Things worth tapping
@@ -254,7 +275,7 @@ huge rows, with their star total, and an animal picture instead of a password.
 - **Routine** → **Manage** → edit a task and give each child a different star value.
 - **Routine** → the dashed cards are today's calendar lessons.
 - **Calendar** → **+ Event**, set it to repeat weekly, then find it on the board.
-- **Kids** → **Add a child**, then **Manage** on the routine board to give them jobs.
+- **Family** → **Add a family member** - a child or a parent - then **Manage** on the routine board to give them jobs.
 - **Rewards** → cash in, then approve or deny it.
 - **Rewards** → **Team pot** → spend the chore stars on a day out together.
 - **Settings** → change the default star values that new tasks start from.

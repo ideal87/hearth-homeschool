@@ -118,6 +118,13 @@ var PALETTES = [
   { id:'k4', name:'Amber' }, { id:'k5', name:'Sky' },  { id:'k6', name:'Mint' }
 ];
 var KID_EMOJI = ['🦊','🐰','🐻','🐸','🦁','🐬','🦉','🐢','🦋','🐼','🐨','🦄'];
+/* faces for anyone who would rather not be an animal - Mom and Dad mostly */
+var PEOPLE_EMOJI = ['👧','👦','🧒','👩','👨','👩‍🦰','👨‍🦰',
+                    '👩‍🦱','👨‍🦱','🧔','👵','👴'];
+var MEMBER_EMOJI_GROUPS = [
+  { name:'Animals', list:KID_EMOJI },
+  { name:'People',  list:PEOPLE_EMOJI }
+];
 /* Icons a parent can give a routine or chore, grouped so the picker stays
    findable. The calendar's subject icons are folded in too, so "Math practice"
    can look like Math. Events don't get these - an event's picture comes from

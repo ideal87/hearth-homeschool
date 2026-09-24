@@ -421,6 +421,24 @@ function kname(id){
 }
 function kidIds(){ return DB.kids.map(function(k){ return k.id; }); }
 
+/* The family list holds parents as well as children. It is still stored as
+   DB.kids so saved data and the cloud copy need no migration; a member with
+   role 'parent' is a grown-up, anyone else is a child. */
+function isParent(k){ return !!k && k.role === 'parent'; }
+/* the line under a name: a child's grade, or "Parent" */
+function memberSub(k){ return isParent(k) ? 'Parent' : ((k && k.grade) || ''); }
+/* the school-only mockup screens are about the children */
+function students(){ return DB.kids.filter(function(k){ return !isParent(k); }); }
+/* a colour nobody in the family has yet, so a new member stands out */
+function firstFreeColor(){
+  for (var i = 0; i < PALETTES.length; i++){
+    var id = PALETTES[i].id, used = false;
+    for (var j = 0; j < DB.kids.length; j++) if (DB.kids[j].color === id) used = true;
+    if (!used) return id;
+  }
+  return 'k4';
+}
+
 function addKid(o){
   o.id = uid('k');
   o.openingStars = o.openingStars || 0;

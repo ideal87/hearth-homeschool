@@ -143,10 +143,10 @@ var TOURS = {
       body:'Give it a picture - a piano, a taekwondo belt, a church - then a colour, a time, and whether it repeats weekly or happens once.' }
   ],
   kids: [
-    { sel:'.card.tint', emoji:'👧', title:'A profile per child',
-      body:'Name, grade, colour and sign-in animal. Change any of it and every other live screen follows immediately.' },
+    { sel:'.card.tint', emoji:'👨‍👩‍👧', title:'Everyone in the family',
+      body:'Children and parents each get a name, a colour and a sign-in picture. Add Mom and Dad and they get a column on the board - their chores fill the team pot too - and a row on the calendar for their own appointments.' },
     { sel:'[data-action^="edit-kid"]', emoji:'✏️', title:'Fully editable',
-      body:'Add a child, recolour them, or remove them entirely. Removing also clears their tasks, stars and calendar entries.' },
+      body:'Add someone, recolour them, or remove them entirely. Removing also clears their tasks, stars and calendar entries.' },
     { sel:'[data-action^="kid-mode"]', emoji:'👀', title:'Their own view',
       body:'Hand the tablet over: only their tasks, in huge rows, with their star total. They sign in by tapping an animal, not typing a password.' }
   ],

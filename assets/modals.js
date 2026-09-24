@@ -138,7 +138,7 @@ function taskEditModal(taskId){
           return '<button class="chip ' + s.cls + (t.slot === s.id ? ' on tint' : '') + '" data-pick="' + s.id + '">' +
                  s.emoji + ' ' + s.name + '</button>'; }).join('') + '</div></div>' +
       '<div class="field"><label>Who does it?</label>' + kidPicker(t.kids, 'kids') + '</div>' +
-      '<div class="field"><label>Stars for each child</label>' +
+      '<div class="field"><label>Stars for each person</label>' +
         '<div id="tk-kidstars" class="kidstars"></div>' +
         '<div class="hint">Older children can earn more for the same job.</div></div>' +
       '<div class="field mb0"><label>Which days?</label>' + dayPicker(t.days || [0,1,2,3,4,5,6], 'days') + '</div>',
@@ -338,15 +338,21 @@ function eventEditModal(eventId, prefill){
 function kidEditModal(kidId){
   var k = kidId ? kid(kidId) : null;
   var isNew = !k;
-  if (isNew) k = { name:'', grade:'Grade 1', age:6, color:'k4', emoji:'🐸', likes:'', openingStars:0 };
+  if (isNew) k = { name:'', grade:'Grade 1', age:6, color:firstFreeColor(), emoji:'🐸', likes:'', openingStars:0 };
+  var parent = isParent(k);
 
   var api = openModal({
-    title: isNew ? 'Add a child' : 'Edit ' + esc(k.name),
+    title: isNew ? 'Add a family member' : 'Edit ' + esc(k.name),
     body:
+      '<div class="field"><label>Who is this?</label><div class="row" data-picker="role">' +
+        '<button class="chip' + (parent ? '' : ' on') + '" data-pick="child">🧒 A child</button>' +
+        '<button class="chip' + (parent ? ' on' : '') + '" data-pick="parent">🧑 A parent</button>' +
+      '</div><div class="hint">Parents get a column, a colour and a calendar row like everyone else - ' +
+      'their chores fill the team pot too. Grades and ages are only asked of children.</div></div>' +
       '<div class="f2">' +
         '<div class="field"><label>Name</label>' +
-          '<input class="inp" id="kd-name" value="' + esc(k.name) + '" placeholder="Jonah"></div>' +
-        '<div class="field"><label>Grade</label><select class="inp" id="kd-grade">' +
+          '<input class="inp" id="kd-name" value="' + esc(k.name) + '" placeholder="' + (parent ? 'Mom' : 'Jonah') + '"></div>' +
+        '<div class="field" id="kd-grade-f"' + (parent ? ' hidden' : '') + '><label>Grade</label><select class="inp" id="kd-grade">' +
           GRADES.map(function(g){
             return '<option' + (g === k.grade ? ' selected' : '') + '>' + g + '</option>'; }).join('') +
         '</select></div>' +
@@ -355,35 +361,46 @@ function kidEditModal(kidId){
         PALETTES.map(function(p){
           return '<button class="chip ' + p.id + (k.color === p.id ? ' on tint' : '') + '" data-pick="' + p.id + '">' +
                  '<span class="dot"></span>' + p.name + '</button>'; }).join('') + '</div></div>' +
-      '<div class="field"><label>Sign-in picture</label>' + emojiPicker(KID_EMOJI, k.emoji, 'emoji') + '</div>' +
+      '<div class="field"><label>Sign-in picture</label>' + emojiPickerGrouped(MEMBER_EMOJI_GROUPS, k.emoji, 'emoji') + '</div>' +
       '<div class="field"><label>Routine board language</label><div class="row wrap" data-picker="lang">' +
         LANGS.map(function(l){
           return '<button class="chip' + ((k.lang || 'en') === l.id ? ' on' : '') + '" data-pick="' + l.id + '">' +
                  l.flag + ' ' + l.name + '</button>'; }).join('') +
       '</div><div class="hint">Their column, their toasts and their own full-screen view all switch to this.</div></div>' +
       '<div class="f2">' +
-        '<div class="field"><label>Age</label>' +
+        '<div class="field" id="kd-age-f"' + (parent ? ' hidden' : '') + '><label>Age</label>' +
           '<input class="inp" id="kd-age" type="number" min="1" max="18" value="' + (k.age || 6) + '"></div>' +
         '<div class="field"><label>Stars to start with</label>' +
           '<input class="inp" id="kd-stars" type="number" min="0" value="' + (k.openingStars || 0) + '"></div>' +
       '</div>' +
       '<div class="field mb0"><label>Loves</label>' +
         '<input class="inp" id="kd-likes" value="' + esc(k.likes || '') + '" placeholder="Dinosaurs, drawing"></div>' +
-      (isNew ? '<div class="hint" style="margin-top:10px">New children start with no routine. Add tasks from the board&rsquo;s <b>Manage</b> button.</div>' : ''),
+      (isNew ? '<div class="hint" style="margin-top:10px">Everyone starts with no routine. Add tasks from the board&rsquo;s <b>Manage</b> button.</div>' : ''),
     foot:
       (isNew ? '' : '<button class="btn btn-danger left" data-action="kid-del:' + k.id + '">' + icon('trash', 'i-sm') + 'Remove</button>') +
       '<button class="btn" data-close="1">Cancel</button>' +
-      '<button class="btn btn-primary" id="kd-save">' + (isNew ? 'Add child' : 'Save') + '</button>'
+      '<button class="btn btn-primary" id="kd-save">' + (isNew ? 'Add' : 'Save') + '</button>'
   });
 
-  wirePickers(api.el, ['color', 'emoji', 'lang']);
+  wirePickers(api.el, ['color', 'emoji', 'lang', 'role']);
+  /* grade and age only mean something for a child */
+  api.el.addEventListener('click', function(e){
+    if (!e.target.closest('[data-picker="role"] [data-pick]')) return;
+    var asParent = pickedOne(api.el, 'role') === 'parent';
+    $('#kd-grade-f', api.el).hidden = asParent;
+    $('#kd-age-f', api.el).hidden = asParent;
+    var nm = $('#kd-name', api.el);
+    nm.placeholder = asParent ? 'Mom' : 'Jonah';
+  });
   $('#kd-save', api.el).addEventListener('click', function(){
     var name = $('#kd-name', api.el).value.trim();
     if (!name){ toast('Give them a name first', 'warn'); return; }
+    var asParent = pickedOne(api.el, 'role') === 'parent';
     var patch = {
       name: name,
-      grade: $('#kd-grade', api.el).value,
-      age: +$('#kd-age', api.el).value || 6,
+      role: asParent ? 'parent' : 'child',
+      grade: asParent ? '' : $('#kd-grade', api.el).value,
+      age: asParent ? null : (+$('#kd-age', api.el).value || 6),
       color: pickedOne(api.el, 'color') || 'k4',
       emoji: pickedOne(api.el, 'emoji') || '🐸',
       lang: pickedOne(api.el, 'lang') || 'en',
@@ -521,7 +538,7 @@ function kidDrawer(kidId, tab){
   openDrawer({
     head: '<div class="row ' + k.color + '"><span style="font-size:42px">' + k.emoji + '</span>' +
           '<div class="grow"><div class="page-title">' + esc(k.name) + '</div>' +
-          '<div class="page-sub">' + esc(k.grade) + '</div></div>' + starPill(starBank(kidId), true) + '</div>',
+          '<div class="page-sub">' + esc(memberSub(k)) + '</div></div>' + starPill(starBank(kidId), true) + '</div>',
     tabs: '<div class="tabs">' + [['overview', 'Overview'], ['routine', 'Routine'], ['today', 'Today']]
             .map(function(t){
               return '<button class="' + (tab === t[0] ? 'on' : '') + '" data-action="kid-tab:' + kidId + ':' + t[0] + '">' +

@@ -36,8 +36,15 @@ function renderTopbar(){
       '<div class="familybar" data-tour="family">' +
         '<button class="chip' + (!state.filter.length ? ' on' : '') + '" data-action="filter-all">👨‍👩‍👧 Everyone</button>' +
         DB.kids.map(function(k){
-          return '<button class="chip ' + k.color + (state.filter.indexOf(k.id) > -1 ? ' on tint' : '') +
-                 '" data-action="filter:' + k.id + '">' + k.emoji + ' ' + esc(k.name) + '</button>';
+          /* with four or more people the names no longer fit on one row, so
+             each chip shows just the face - the same face and colour that
+             person has on every column and calendar row. A picked chip is
+             tinted in their colour, so it is still clear who is showing. */
+          var on = state.filter.indexOf(k.id) > -1;
+          var faceOnly = DB.kids.length > 3;
+          return '<button class="chip ' + k.color + (on ? ' on tint' : '') + (faceOnly ? ' chip-face' : '') +
+                 '" data-action="filter:' + k.id + '" title="' + esc(k.name) + '" aria-label="' + esc(k.name) + '">' +
+                 k.emoji + (faceOnly ? '' : ' ' + esc(k.name)) + '</button>';
         }).join('') +
       '</div>' +
       '<div class="topbar-actions">' +
